@@ -148,10 +148,34 @@ class _LoginScreenState extends State<LoginScreen> {
           TextField(
             controller: _email,
             keyboardType: TextInputType.emailAddress,
-            decoration: const InputDecoration(
+            style: ThemeColors.getTextStyle(context),
+            decoration: InputDecoration(
               hintText: 'Enter your email address',
-              hintStyle: TextStyle(color: Color(0xFF999999)),
-              prefixIcon: Icon(Icons.email_outlined, color: Color(0xFF999999)),
+              hintStyle: ThemeColors.getHintStyle(context),
+              prefixIcon: Icon(
+                Icons.email_outlined,
+                color: ThemeColors.getHintColor(context),
+              ),
+              filled: true,
+              fillColor: ThemeColors.getCardColor(context),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(
+                  color: ThemeColors.getBorderColor(context),
+                ),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(
+                  color: ThemeColors.getBorderColor(context),
+                ),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(
+                  color: ThemeColors.getPrimaryColor(context),
+                ),
+              ),
             ),
           ),
           SizedBox(height: isSmallScreen ? 16 : 20),
@@ -180,10 +204,34 @@ class _LoginScreenState extends State<LoginScreen> {
           TextField(
             controller: _password,
             obscureText: true,
-            decoration: const InputDecoration(
+            style: ThemeColors.getTextStyle(context),
+            decoration: InputDecoration(
               hintText: 'Enter your password',
-              hintStyle: TextStyle(color: Color(0xFF999999)),
-              prefixIcon: Icon(Icons.lock_outline, color: Color(0xFF999999)),
+              hintStyle: ThemeColors.getHintStyle(context),
+              prefixIcon: Icon(
+                Icons.lock_outline,
+                color: ThemeColors.getHintColor(context),
+              ),
+              filled: true,
+              fillColor: ThemeColors.getCardColor(context),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(
+                  color: ThemeColors.getBorderColor(context),
+                ),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(
+                  color: ThemeColors.getBorderColor(context),
+                ),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(
+                  color: ThemeColors.getPrimaryColor(context),
+                ),
+              ),
             ),
           ),
 
@@ -193,9 +241,11 @@ class _LoginScreenState extends State<LoginScreen> {
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: const Color(0xFFFFEBEE),
+                color: ThemeColors.getErrorBackgroundColor(context),
                 borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: const Color(0xFFFFCDD2)),
+                border: Border.all(
+                  color: ThemeColors.getErrorBorderColor(context),
+                ),
               ),
               child: Text(_error!, style: ThemeColors.getErrorStyle(context)),
             ),
@@ -206,6 +256,14 @@ class _LoginScreenState extends State<LoginScreen> {
           // Sign In button
           ElevatedButton(
             onPressed: _canSubmit ? _login : null,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: ThemeColors.getPrimaryColor(context),
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(vertical: 16),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
             child: _loading
                 ? const SizedBox(
                     width: 20,
@@ -215,7 +273,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                     ),
                   )
-                : const Text('SIGN IN'),
+                : Text('SIGN IN', style: ThemeColors.getTextStyle(context)),
           ),
 
           SizedBox(height: isSmallScreen ? 20 : 24),
@@ -238,7 +296,13 @@ class _LoginScreenState extends State<LoginScreen> {
                           ),
                         );
                       },
-                child: const Text('Sign Up'),
+                style: TextButton.styleFrom(
+                  foregroundColor: ThemeColors.getPrimaryColor(context),
+                ),
+                child: Text(
+                  'Sign Up',
+                  style: ThemeColors.getTextStyle(context),
+                ),
               ),
             ],
           ),
@@ -250,15 +314,21 @@ class _LoginScreenState extends State<LoginScreen> {
             // Divider
             Row(
               children: [
-                const Expanded(child: Divider(color: Color(0xFFE0E0E0))),
-                const Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 16),
+                Expanded(
+                  child: Divider(color: ThemeColors.getBorderColor(context)),
+                ),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
                   child: Text(
                     'Or sign in with:',
-                    style: TextStyle(fontSize: 14, color: Color(0xFF666666)),
+                    style: ThemeColors.getHintStyle(
+                      context,
+                    ).copyWith(fontSize: 14),
                   ),
                 ),
-                const Expanded(child: Divider(color: Color(0xFFE0E0E0))),
+                Expanded(
+                  child: Divider(color: ThemeColors.getBorderColor(context)),
+                ),
               ],
             ),
 
@@ -310,12 +380,13 @@ class _SocialButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return OutlinedButton.icon(
       onPressed: onPressed,
-      icon: Icon(icon, size: 20),
-      label: Text(label),
+      icon: Icon(icon, size: 20, color: ThemeColors.getTextColor(context)),
+      label: Text(label, style: ThemeColors.getTextStyle(context)),
       style: OutlinedButton.styleFrom(
         padding: const EdgeInsets.symmetric(vertical: 12),
-        side: const BorderSide(color: Color(0xFFE0E0E0)),
+        side: BorderSide(color: ThemeColors.getBorderColor(context)),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        backgroundColor: ThemeColors.getCardColor(context),
       ),
     );
   }

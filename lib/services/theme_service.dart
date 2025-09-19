@@ -28,6 +28,15 @@ class ThemeService extends ChangeNotifier {
     instance.notifyListeners();
   }
 
+  bool get isDarkMode => _themeMode == ThemeMode.dark;
+
+  void toggleTheme() {
+    final newMode = _themeMode == ThemeMode.dark
+        ? ThemeMode.light
+        : ThemeMode.dark;
+    setThemeMode(newMode);
+  }
+
   static ThemeData getLightTheme() {
     return ThemeData(
       useMaterial3: true,

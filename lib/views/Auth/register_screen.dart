@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:qrscan_app/config/app_config.dart';
 import 'package:qrscan_app/views/shared/auth_shell.dart';
+import 'package:qrscan_app/utils/theme_colors.dart';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -176,96 +177,164 @@ class _RegisterScreenState extends State<RegisterScreen> {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           // Email field
-          const Text(
-            'Email',
-            style: TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w500,
-              color: Color(0xFF1A1A1A),
-            ),
-          ),
+          Text('Email', style: ThemeColors.getLabelStyle(context)),
           const SizedBox(height: 8),
           TextField(
             controller: _email,
             keyboardType: TextInputType.emailAddress,
-            decoration: const InputDecoration(
+            style: ThemeColors.getTextStyle(context),
+            decoration: InputDecoration(
               hintText: 'Enter your email address',
-              hintStyle: TextStyle(color: Color(0xFF999999)),
-              prefixIcon: Icon(Icons.email_outlined, color: Color(0xFF999999)),
+              hintStyle: ThemeColors.getHintStyle(context),
+              prefixIcon: Icon(
+                Icons.email_outlined,
+                color: ThemeColors.getHintColor(context),
+              ),
+              filled: true,
+              fillColor: ThemeColors.getCardColor(context),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(
+                  color: ThemeColors.getBorderColor(context),
+                ),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(
+                  color: ThemeColors.getBorderColor(context),
+                ),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(
+                  color: ThemeColors.getPrimaryColor(context),
+                ),
+              ),
             ),
           ),
           SizedBox(height: isSmallScreen ? 16 : 20),
 
           // Full Name field
-          const Text(
-            'Full Name',
-            style: TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w500,
-              color: Color(0xFF1A1A1A),
-            ),
-          ),
+          Text('Full Name', style: ThemeColors.getLabelStyle(context)),
           const SizedBox(height: 8),
           TextField(
             controller: _fullName,
-            decoration: const InputDecoration(
+            style: ThemeColors.getTextStyle(context),
+            decoration: InputDecoration(
               hintText: 'Enter your full name',
-              hintStyle: TextStyle(color: Color(0xFF999999)),
-              prefixIcon: Icon(Icons.person_outline, color: Color(0xFF999999)),
+              hintStyle: ThemeColors.getHintStyle(context),
+              prefixIcon: Icon(
+                Icons.person_outline,
+                color: ThemeColors.getHintColor(context),
+              ),
+              filled: true,
+              fillColor: ThemeColors.getCardColor(context),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(
+                  color: ThemeColors.getBorderColor(context),
+                ),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(
+                  color: ThemeColors.getBorderColor(context),
+                ),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(
+                  color: ThemeColors.getPrimaryColor(context),
+                ),
+              ),
             ),
           ),
           SizedBox(height: isSmallScreen ? 16 : 20),
 
           // Password field
-          const Text(
-            'Password',
-            style: TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w500,
-              color: Color(0xFF1A1A1A),
-            ),
-          ),
+          Text('Password', style: ThemeColors.getLabelStyle(context)),
           const SizedBox(height: 8),
           TextField(
             controller: _password,
             obscureText: true,
-            decoration: const InputDecoration(
+            style: ThemeColors.getTextStyle(context),
+            decoration: InputDecoration(
               hintText: 'Create a strong password',
-              hintStyle: TextStyle(color: Color(0xFF999999)),
-              prefixIcon: Icon(Icons.lock_outline, color: Color(0xFF999999)),
+              hintStyle: ThemeColors.getHintStyle(context),
+              prefixIcon: Icon(
+                Icons.lock_outline,
+                color: ThemeColors.getHintColor(context),
+              ),
+              filled: true,
+              fillColor: ThemeColors.getCardColor(context),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(
+                  color: ThemeColors.getBorderColor(context),
+                ),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(
+                  color: ThemeColors.getBorderColor(context),
+                ),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(
+                  color: ThemeColors.getPrimaryColor(context),
+                ),
+              ),
             ),
           ),
           const SizedBox(height: 4),
           Text(
             'Mật khẩu phải có ít nhất 8 ký tự, bao gồm chữ hoa, chữ thường, số và ký tự đặc biệt',
-            style: TextStyle(
+            style: ThemeColors.getHintStyle(context).copyWith(
               fontSize: 12,
               color:
                   _password.text.isNotEmpty &&
                       !_isStrongPassword(_password.text)
-                  ? const Color(0xFFD32F2F)
-                  : const Color(0xFF666666),
+                  ? ThemeColors.getErrorColor(context)
+                  : ThemeColors.getHintColor(context),
             ),
           ),
           SizedBox(height: isSmallScreen ? 16 : 20),
 
           // Confirm password field
-          const Text(
-            'Confirm Password',
-            style: TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w500,
-              color: Color(0xFF1A1A1A),
-            ),
-          ),
+          Text('Confirm Password', style: ThemeColors.getLabelStyle(context)),
           const SizedBox(height: 8),
           TextField(
             controller: _confirm,
             obscureText: true,
-            decoration: const InputDecoration(
+            style: ThemeColors.getTextStyle(context),
+            decoration: InputDecoration(
               hintText: 'Confirm your password',
-              hintStyle: TextStyle(color: Color(0xFF999999)),
-              prefixIcon: Icon(Icons.lock_outline, color: Color(0xFF999999)),
+              hintStyle: ThemeColors.getHintStyle(context),
+              prefixIcon: Icon(
+                Icons.lock_outline,
+                color: ThemeColors.getHintColor(context),
+              ),
+              filled: true,
+              fillColor: ThemeColors.getCardColor(context),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(
+                  color: ThemeColors.getBorderColor(context),
+                ),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(
+                  color: ThemeColors.getBorderColor(context),
+                ),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(
+                  color: ThemeColors.getPrimaryColor(context),
+                ),
+              ),
             ),
           ),
           const SizedBox(height: 4),
@@ -273,7 +342,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
             _confirm.text.isNotEmpty && _password.text != _confirm.text
                 ? 'Mật khẩu không khớp'
                 : '',
-            style: const TextStyle(fontSize: 12, color: Color(0xFFD32F2F)),
+            style: ThemeColors.getErrorStyle(context).copyWith(fontSize: 12),
           ),
 
           // Error messages
@@ -282,13 +351,15 @@ class _RegisterScreenState extends State<RegisterScreen> {
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: const Color(0xFFFFEBEE),
+                color: ThemeColors.getErrorBackgroundColor(context),
                 borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: const Color(0xFFFFCDD2)),
+                border: Border.all(
+                  color: ThemeColors.getErrorBorderColor(context),
+                ),
               ),
               child: Text(
                 _serverMessage!,
-                style: const TextStyle(color: Color(0xFFD32F2F), fontSize: 14),
+                style: ThemeColors.getErrorStyle(context),
               ),
             ),
           ],
@@ -297,14 +368,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: const Color(0xFFFFEBEE),
+                color: ThemeColors.getErrorBackgroundColor(context),
                 borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: const Color(0xFFFFCDD2)),
+                border: Border.all(
+                  color: ThemeColors.getErrorBorderColor(context),
+                ),
               ),
-              child: Text(
-                _error!,
-                style: const TextStyle(color: Color(0xFFD32F2F), fontSize: 14),
-              ),
+              child: Text(_error!, style: ThemeColors.getErrorStyle(context)),
             ),
           ],
 
@@ -322,7 +392,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                     ),
                   )
-                : const Text('SIGN UP'),
+                : Text('SIGN UP', style: ThemeColors.getTextStyle(context)),
           ),
 
           SizedBox(height: isSmallScreen ? 20 : 24),
@@ -331,13 +401,16 @@ class _RegisterScreenState extends State<RegisterScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const Text(
+              Text(
                 'Already have an account? ',
-                style: TextStyle(fontSize: 14, color: Color(0xFF666666)),
+                style: ThemeColors.getHintStyle(context),
               ),
               TextButton(
                 onPressed: _loading ? null : () => Navigator.of(context).pop(),
-                child: const Text('Sign In'),
+                child: Text(
+                  'Sign In',
+                  style: ThemeColors.getTextStyle(context),
+                ),
               ),
             ],
           ),

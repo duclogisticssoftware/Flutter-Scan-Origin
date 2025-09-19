@@ -21,12 +21,24 @@ class ThemeColors {
     return Theme.of(context).colorScheme.error;
   }
 
+  static Color getErrorBackgroundColor(BuildContext context) {
+    return Theme.of(context).colorScheme.error.withOpacity(0.1);
+  }
+
+  static Color getErrorBorderColor(BuildContext context) {
+    return Theme.of(context).colorScheme.error.withOpacity(0.3);
+  }
+
   static Color getHintColor(BuildContext context) {
     return Theme.of(context).colorScheme.onSurface.withOpacity(0.4);
   }
 
   static Color getDividerColor(BuildContext context) {
     return Theme.of(context).colorScheme.outline.withOpacity(0.2);
+  }
+
+  static Color getBorderColor(BuildContext context) {
+    return Theme.of(context).colorScheme.outline.withOpacity(0.3);
   }
 
   static Color getCardColor(BuildContext context) {
@@ -68,6 +80,10 @@ class ThemeColors {
 
   static TextStyle getErrorStyle(BuildContext context) {
     return TextStyle(fontSize: 14, color: getErrorColor(context));
+  }
+
+  static TextStyle getTextStyle(BuildContext context) {
+    return TextStyle(fontSize: 16, color: getSurfaceTextColor(context));
   }
 
   static TextStyle getCardTitleStyle(BuildContext context) {

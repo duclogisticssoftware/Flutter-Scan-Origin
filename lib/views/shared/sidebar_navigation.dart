@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:qrscan_app/views/Scan/scan_screen.dart';
 import 'package:qrscan_app/views/History/history_screen.dart';
 import 'package:qrscan_app/views/Settings/settings_screen.dart';
-import 'package:qrscan_app/views/Test/responsive_test_screen.dart';
 import 'package:qrscan_app/utils/theme_colors.dart';
 
 class SidebarNavigation extends StatefulWidget {
@@ -47,11 +46,6 @@ class _SidebarNavigationState extends State<SidebarNavigation> {
       icon: Icons.report,
       title: 'Reports',
       screen: const PlaceholderScreen(title: 'Reports'),
-    ),
-    NavigationItem(
-      icon: Icons.screen_rotation,
-      title: 'Responsive Test',
-      screen: const ResponsiveTestScreen(),
     ),
   ];
 

@@ -22,7 +22,7 @@ class AuthShell extends StatelessWidget {
     final isVerySmallScreen = screenHeight < 600;
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: ThemeColors.getBackgroundColor(context),
       body: SafeArea(
         child: SingleChildScrollView(
           child: ConstrainedBox(
@@ -57,7 +57,7 @@ class AuthShell extends StatelessWidget {
                           style: TextStyle(
                             fontSize: isVerySmallScreen ? 24 : 28,
                             fontWeight: FontWeight.bold,
-                            color: ThemeColors.getTextColor(context),
+                            color: ThemeColors.getSurfaceTextColor(context),
                           ),
                           textAlign: TextAlign.center,
                         ),
@@ -68,7 +68,9 @@ class AuthShell extends StatelessWidget {
                           subtitle,
                           style: TextStyle(
                             fontSize: isVerySmallScreen ? 14 : 16,
-                            color: ThemeColors.getSecondaryTextColor(context),
+                            color: ThemeColors.getSurfaceSecondaryTextColor(
+                              context,
+                            ),
                             height: 1.4,
                           ),
                           textAlign: TextAlign.center,
