@@ -51,6 +51,10 @@ class _SidebarNavigationState extends State<SidebarNavigation> {
 
   @override
   Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isTablet = screenWidth > 768;
+    final isDesktop = screenWidth > 1024;
+
     return Scaffold(
       key: _scaffoldKey,
       appBar: AppBar(
@@ -58,23 +62,40 @@ class _SidebarNavigationState extends State<SidebarNavigation> {
           icon: const Icon(Icons.menu),
           onPressed: () => _scaffoldKey.currentState?.openDrawer(),
         ),
-        title: Text(_navigationItems[_selectedIndex].title),
+        title: Text(
+          _navigationItems[_selectedIndex].title,
+          style: TextStyle(fontSize: screenWidth < 360 ? 16 : 20),
+        ),
         backgroundColor: const Color(0xFFFF6B35),
         foregroundColor: Colors.white,
         elevation: 0,
+        centerTitle: !isTablet,
       ),
-      drawer: _buildDrawer(),
-      body: _navigationItems[_selectedIndex].screen,
+      drawer: isDesktop ? null : _buildDrawer(),
+      body: Row(
+        children: [
+          // Desktop sidebar
+          if (isDesktop) _buildDesktopSidebar(),
+
+          // Main content
+          Expanded(child: _navigationItems[_selectedIndex].screen),
+        ],
+      ),
     );
   }
 
-  Widget _buildDrawer() {
-    return Drawer(
+  Widget _buildDesktopSidebar() {
+    return Container(
+      width: 280,
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        border: Border(right: BorderSide(color: Color(0xFFE0E0E0), width: 1)),
+      ),
       child: Column(
         children: [
-          // Header with logo and app name
+          // Header
           Container(
-            height: 200,
+            height: 120,
             decoration: const BoxDecoration(
               gradient: LinearGradient(
                 begin: Alignment.topLeft,
@@ -88,40 +109,38 @@ class _SidebarNavigationState extends State<SidebarNavigation> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Logo
                     Container(
-                      width: 60,
-                      height: 60,
+                      width: 50,
+                      height: 50,
                       decoration: BoxDecoration(
                         color: Colors.white,
-                        borderRadius: BorderRadius.circular(15),
+                        borderRadius: BorderRadius.circular(12),
                         boxShadow: [
                           BoxShadow(
                             color: Colors.black.withOpacity(0.1),
-                            blurRadius: 10,
-                            offset: const Offset(0, 4),
+                            blurRadius: 8,
+                            offset: const Offset(0, 2),
                           ),
                         ],
                       ),
                       child: Icon(
                         Icons.qr_code_scanner,
-                        size: 30,
+                        size: 24,
                         color: ThemeColors.getPrimaryColor(context),
                       ),
                     ),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 12),
                     const Text(
                       'QR Scan Vinalink',
                       style: TextStyle(
-                        fontSize: 24,
+                        fontSize: 18,
                         fontWeight: FontWeight.bold,
                         color: Colors.white,
                       ),
                     ),
-                    const SizedBox(height: 4),
                     const Text(
-                      'QR Scan Vinalink',
-                      style: TextStyle(fontSize: 14, color: Colors.white70),
+                      'Professional QR Scanner',
+                      style: TextStyle(fontSize: 12, color: Colors.white70),
                     ),
                   ],
                 ),
@@ -155,7 +174,7 @@ class _SidebarNavigationState extends State<SidebarNavigation> {
                       color: isSelected
                           ? ThemeColors.getPrimaryColor(context)
                           : ThemeColors.getHintColor(context),
-                      size: 24,
+                      size: 22,
                     ),
                     title: Text(
                       item.title,
@@ -166,7 +185,7 @@ class _SidebarNavigationState extends State<SidebarNavigation> {
                         fontWeight: isSelected
                             ? FontWeight.w600
                             : FontWeight.normal,
-                        fontSize: 16,
+                        fontSize: 15,
                       ),
                     ),
                     selected: isSelected,
@@ -175,7 +194,6 @@ class _SidebarNavigationState extends State<SidebarNavigation> {
                       setState(() {
                         _selectedIndex = index;
                       });
-                      Navigator.of(context).pop(); // Close drawer
                     },
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
@@ -200,14 +218,169 @@ class _SidebarNavigationState extends State<SidebarNavigation> {
                   'Version 1.0.0',
                   style: ThemeColors.getHintStyle(
                     context,
-                  ).copyWith(fontSize: 12),
+                  ).copyWith(fontSize: 11),
                 ),
-                const SizedBox(height: 4),
+                const SizedBox(height: 2),
                 Text(
                   '© 2024 QR Scan Vinalink',
                   style: ThemeColors.getHintStyle(
                     context,
-                  ).copyWith(fontSize: 10),
+                  ).copyWith(fontSize: 9),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDrawer() {
+    final screenHeight = MediaQuery.of(context).size.height;
+    final isSmallScreen = screenHeight < 700;
+
+    return Drawer(
+      child: Column(
+        children: [
+          // Header with logo and app name
+          Container(
+            height: isSmallScreen ? 160 : 200,
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [Color(0xFFFF6B35), Color(0xFFFF8A65)],
+              ),
+            ),
+            child: SafeArea(
+              child: Padding(
+                padding: EdgeInsets.all(isSmallScreen ? 16 : 20),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Logo
+                    Container(
+                      width: isSmallScreen ? 50 : 60,
+                      height: isSmallScreen ? 50 : 60,
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(15),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.1),
+                            blurRadius: 10,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
+                      ),
+                      child: Icon(
+                        Icons.qr_code_scanner,
+                        size: isSmallScreen ? 24 : 30,
+                        color: ThemeColors.getPrimaryColor(context),
+                      ),
+                    ),
+                    SizedBox(height: isSmallScreen ? 12 : 16),
+                    Text(
+                      'QR Scan Vinalink',
+                      style: TextStyle(
+                        fontSize: isSmallScreen ? 20 : 24,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                    ),
+                    SizedBox(height: isSmallScreen ? 2 : 4),
+                    Text(
+                      'Professional QR Scanner',
+                      style: TextStyle(
+                        fontSize: isSmallScreen ? 12 : 14,
+                        color: Colors.white70,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+
+          // Navigation items
+          Expanded(
+            child: ListView.builder(
+              padding: const EdgeInsets.symmetric(vertical: 8),
+              itemCount: _navigationItems.length,
+              itemBuilder: (context, index) {
+                final item = _navigationItems[index];
+                final isSelected = _selectedIndex == index;
+
+                return Container(
+                  margin: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 2,
+                  ),
+                  decoration: BoxDecoration(
+                    color: isSelected
+                        ? const Color(0xFFFF6B35).withOpacity(0.1)
+                        : null,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: ListTile(
+                    leading: Icon(
+                      item.icon,
+                      color: isSelected
+                          ? ThemeColors.getPrimaryColor(context)
+                          : ThemeColors.getHintColor(context),
+                      size: isSmallScreen ? 20 : 24,
+                    ),
+                    title: Text(
+                      item.title,
+                      style: TextStyle(
+                        color: isSelected
+                            ? ThemeColors.getPrimaryColor(context)
+                            : ThemeColors.getTextColor(context),
+                        fontWeight: isSelected
+                            ? FontWeight.w600
+                            : FontWeight.normal,
+                        fontSize: isSmallScreen ? 14 : 16,
+                      ),
+                    ),
+                    selected: isSelected,
+                    selectedTileColor: Colors.transparent,
+                    onTap: () {
+                      setState(() {
+                        _selectedIndex = index;
+                      });
+                      Navigator.of(context).pop(); // Close drawer
+                    },
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+
+          // Footer
+          Container(
+            padding: EdgeInsets.all(isSmallScreen ? 12 : 16),
+            decoration: BoxDecoration(
+              border: Border(
+                top: BorderSide(color: Colors.grey.withOpacity(0.2), width: 1),
+              ),
+            ),
+            child: Column(
+              children: [
+                Text(
+                  'Version 1.0.0',
+                  style: ThemeColors.getHintStyle(
+                    context,
+                  ).copyWith(fontSize: isSmallScreen ? 10 : 12),
+                ),
+                SizedBox(height: isSmallScreen ? 2 : 4),
+                Text(
+                  '© 2024 QR Scan Vinalink',
+                  style: ThemeColors.getHintStyle(
+                    context,
+                  ).copyWith(fontSize: isSmallScreen ? 8 : 10),
                 ),
               ],
             ),

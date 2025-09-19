@@ -1,1 +1,0 @@
- C:\\Users\\PCPV\\qrscan_app\\.dart_tool\\flutter_build\\57855b2d8710333ea930a377a1745148\\dart_build_result.json: 

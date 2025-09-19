@@ -65,63 +65,92 @@ class _HistoryScreenState extends State<HistoryScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final screenSize = MediaQuery.of(context).size;
+    final screenWidth = screenSize.width;
+    final screenHeight = screenSize.height;
+    final isSmallScreen = screenHeight < 700;
+    final isTablet = screenWidth > 768;
+
     return Scaffold(
       body: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: EdgeInsets.all(isTablet ? 24 : (isSmallScreen ? 12 : 16)),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Text('Scan History', style: ThemeColors.getTitleStyle(context)),
-            const SizedBox(height: 16),
+            Text(
+              'Scan History',
+              style: ThemeColors.getTitleStyle(
+                context,
+              ).copyWith(fontSize: isSmallScreen ? 20 : 24),
+            ),
+            SizedBox(height: isSmallScreen ? 12 : 16),
 
             if (_loading)
-              const Center(child: CircularProgressIndicator())
+              Center(
+                child: CircularProgressIndicator(
+                  strokeWidth: isSmallScreen ? 2 : 3,
+                ),
+              )
             else if (_error != null)
-              _buildErrorWidget()
+              _buildErrorWidget(isSmallScreen)
             else if (_scanHistory.isEmpty)
-              _buildEmptyWidget()
+              _buildEmptyWidget(isSmallScreen)
             else
-              Expanded(child: _buildHistoryList()),
+              Expanded(child: _buildHistoryList(isSmallScreen, isTablet)),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildErrorWidget() {
+  Widget _buildErrorWidget(bool isSmallScreen) {
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Icon(Icons.error_outline, size: 64, color: Color(0xFFD32F2F)),
-          const SizedBox(height: 16),
+          Icon(
+            Icons.error_outline,
+            size: isSmallScreen ? 48 : 64,
+            color: const Color(0xFFD32F2F),
+          ),
+          SizedBox(height: isSmallScreen ? 12 : 16),
           Text(
             _error!,
-            style: ThemeColors.getErrorStyle(context).copyWith(fontSize: 16),
+            style: ThemeColors.getErrorStyle(
+              context,
+            ).copyWith(fontSize: isSmallScreen ? 14 : 16),
             textAlign: TextAlign.center,
           ),
-          const SizedBox(height: 16),
+          SizedBox(height: isSmallScreen ? 12 : 16),
           ElevatedButton(onPressed: _loadHistory, child: const Text('Retry')),
         ],
       ),
     );
   }
 
-  Widget _buildEmptyWidget() {
+  Widget _buildEmptyWidget(bool isSmallScreen) {
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Icon(Icons.history, size: 64, color: Color(0xFF666666)),
-          const SizedBox(height: 16),
+          Icon(
+            Icons.history,
+            size: isSmallScreen ? 48 : 64,
+            color: const Color(0xFF666666),
+          ),
+          SizedBox(height: isSmallScreen ? 12 : 16),
           Text(
             'No scan history yet',
-            style: ThemeColors.getSubtitleStyle(context).copyWith(fontSize: 18),
+            style: ThemeColors.getSubtitleStyle(
+              context,
+            ).copyWith(fontSize: isSmallScreen ? 16 : 18),
           ),
-          const SizedBox(height: 8),
+          SizedBox(height: isSmallScreen ? 6 : 8),
           Text(
             'Start scanning QR codes to see your history here',
-            style: ThemeColors.getHintStyle(context),
+            style: ThemeColors.getHintStyle(
+              context,
+            ).copyWith(fontSize: isSmallScreen ? 12 : 14),
             textAlign: TextAlign.center,
           ),
         ],
@@ -129,7 +158,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
     );
   }
 
-  Widget _buildHistoryList() {
+  Widget _buildHistoryList(bool isSmallScreen, bool isTablet) {
     return RefreshIndicator(
       onRefresh: _loadHistory,
       child: ListView.builder(
@@ -137,9 +166,13 @@ class _HistoryScreenState extends State<HistoryScreen> {
         itemBuilder: (context, index) {
           final scan = _scanHistory[index];
           return Card(
-            margin: const EdgeInsets.only(bottom: 12),
+            margin: EdgeInsets.only(
+              bottom: isSmallScreen ? 8 : 12,
+              left: isTablet ? 0 : 0,
+              right: isTablet ? 0 : 0,
+            ),
             child: Padding(
-              padding: const EdgeInsets.all(16),
+              padding: EdgeInsets.all(isSmallScreen ? 12 : 16),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisSize: MainAxisSize.min,
@@ -147,41 +180,43 @@ class _HistoryScreenState extends State<HistoryScreen> {
                   Row(
                     children: [
                       Container(
-                        padding: const EdgeInsets.all(8),
+                        padding: EdgeInsets.all(isSmallScreen ? 6 : 8),
                         decoration: BoxDecoration(
                           color: const Color(0xFFFF6B35).withOpacity(0.1),
                           borderRadius: BorderRadius.circular(8),
                         ),
-                        child: const Icon(
+                        child: Icon(
                           Icons.qr_code_scanner,
-                          color: Color(0xFFFF6B35),
-                          size: 20,
+                          color: const Color(0xFFFF6B35),
+                          size: isSmallScreen ? 16 : 20,
                         ),
                       ),
-                      const SizedBox(width: 12),
+                      SizedBox(width: isSmallScreen ? 8 : 12),
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
                               'Scan #${scan['id'] ?? 'Unknown'}',
-                              style: ThemeColors.getListItemTitleStyle(
-                                context,
-                              ).copyWith(fontWeight: FontWeight.w600),
+                              style: ThemeColors.getListItemTitleStyle(context)
+                                  .copyWith(
+                                    fontWeight: FontWeight.w600,
+                                    fontSize: isSmallScreen ? 14 : 16,
+                                  ),
                             ),
-                            const SizedBox(height: 4),
+                            SizedBox(height: isSmallScreen ? 2 : 4),
                             Text(
                               _formatDateTime(scan['scannedAt']),
                               style: ThemeColors.getListItemSubtitleStyle(
                                 context,
-                              ).copyWith(fontSize: 12),
+                              ).copyWith(fontSize: isSmallScreen ? 10 : 12),
                             ),
                           ],
                         ),
                       ),
                       Icon(
                         Icons.arrow_forward_ios,
-                        size: 16,
+                        size: isSmallScreen ? 14 : 16,
                         color: ThemeColors.getHintColor(context),
                       ),
                     ],

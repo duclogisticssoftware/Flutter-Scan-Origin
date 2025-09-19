@@ -160,6 +160,13 @@ class _ScanScreenState extends State<ScanScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final screenSize = MediaQuery.of(context).size;
+    final screenWidth = screenSize.width;
+    final screenHeight = screenSize.height;
+    final isSmallScreen = screenHeight < 700;
+    final isVerySmallScreen = screenHeight < 600;
+    final isTablet = screenWidth > 768;
+
     return Stack(
       children: [
         MobileScanner(
@@ -172,19 +179,22 @@ class _ScanScreenState extends State<ScanScreen> {
         if (_processing)
           Container(
             color: Colors.black.withOpacity(0.7),
-            child: const Center(
+            child: Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   CircularProgressIndicator(
-                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                    valueColor: const AlwaysStoppedAnimation<Color>(
+                      Colors.white,
+                    ),
+                    strokeWidth: isSmallScreen ? 2 : 3,
                   ),
-                  SizedBox(height: 16),
+                  SizedBox(height: isSmallScreen ? 12 : 16),
                   Text(
                     'Processing...',
                     style: TextStyle(
                       color: Colors.white,
-                      fontSize: 18,
+                      fontSize: isSmallScreen ? 16 : 18,
                       fontWeight: FontWeight.w500,
                     ),
                   ),
@@ -195,26 +205,97 @@ class _ScanScreenState extends State<ScanScreen> {
 
         // Scan instructions
         Positioned(
-          top: 50,
-          left: 20,
-          right: 20,
+          top: isSmallScreen ? 30 : 50,
+          left: isTablet ? 40 : 20,
+          right: isTablet ? 40 : 20,
           child: Container(
-            padding: const EdgeInsets.all(16),
+            padding: EdgeInsets.all(isSmallScreen ? 12 : 16),
             decoration: BoxDecoration(
               color: Colors.black.withOpacity(0.7),
               borderRadius: BorderRadius.circular(12),
             ),
-            child: const Text(
+            child: Text(
               'Point camera at QR code to scan user ID',
               style: TextStyle(
                 color: Colors.white,
-                fontSize: 16,
+                fontSize: isSmallScreen ? 14 : 16,
                 fontWeight: FontWeight.w500,
               ),
               textAlign: TextAlign.center,
             ),
           ),
         ),
+
+        // Scan frame overlay for better UX
+        if (!isVerySmallScreen)
+          Center(
+            child: Container(
+              width: isTablet ? 300 : 250,
+              height: isTablet ? 300 : 250,
+              decoration: BoxDecoration(
+                border: Border.all(color: const Color(0xFFFF6B35), width: 3),
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Stack(
+                children: [
+                  // Corner indicators
+                  ...List.generate(4, (index) {
+                    return Positioned(
+                      top: index < 2 ? 0 : null,
+                      bottom: index >= 2 ? 0 : null,
+                      left: index % 2 == 0 ? 0 : null,
+                      right: index % 2 == 1 ? 0 : null,
+                      child: Container(
+                        width: 20,
+                        height: 20,
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFFF6B35),
+                          borderRadius: BorderRadius.only(
+                            topLeft: index == 0
+                                ? const Radius.circular(20)
+                                : Radius.zero,
+                            topRight: index == 1
+                                ? const Radius.circular(20)
+                                : Radius.zero,
+                            bottomLeft: index == 2
+                                ? const Radius.circular(20)
+                                : Radius.zero,
+                            bottomRight: index == 3
+                                ? const Radius.circular(20)
+                                : Radius.zero,
+                          ),
+                        ),
+                      ),
+                    );
+                  }),
+                ],
+              ),
+            ),
+          ),
+
+        // Bottom instructions for very small screens
+        if (isVerySmallScreen)
+          Positioned(
+            bottom: 30,
+            left: 20,
+            right: 20,
+            child: Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.black.withOpacity(0.7),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: const Text(
+                'Align QR code within the frame',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w500,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ),
+          ),
       ],
     );
   }

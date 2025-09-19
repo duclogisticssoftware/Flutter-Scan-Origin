@@ -45,61 +45,87 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final screenSize = MediaQuery.of(context).size;
+    final screenWidth = screenSize.width;
+    final screenHeight = screenSize.height;
+    final isSmallScreen = screenHeight < 700;
+    final isTablet = screenWidth > 768;
+
     return Padding(
-      padding: const EdgeInsets.all(16),
+      padding: EdgeInsets.all(isTablet ? 24 : (isSmallScreen ? 12 : 16)),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Text('Settings', style: ThemeColors.getTitleStyle(context)),
-          const SizedBox(height: 24),
+          Text(
+            'Settings',
+            style: ThemeColors.getTitleStyle(
+              context,
+            ).copyWith(fontSize: isSmallScreen ? 20 : 24),
+          ),
+          SizedBox(height: isSmallScreen ? 16 : 24),
 
           // User info card
           Card(
             child: Padding(
-              padding: const EdgeInsets.all(16),
+              padding: EdgeInsets.all(isSmallScreen ? 12 : 16),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
                     'Account',
-                    style: ThemeColors.getCardTitleStyle(context),
+                    style: ThemeColors.getCardTitleStyle(
+                      context,
+                    ).copyWith(fontSize: isSmallScreen ? 16 : 18),
                   ),
-                  const SizedBox(height: 8),
+                  SizedBox(height: isSmallScreen ? 6 : 8),
                   Text(
                     'Manage your account settings',
-                    style: ThemeColors.getCardSubtitleStyle(context),
+                    style: ThemeColors.getCardSubtitleStyle(
+                      context,
+                    ).copyWith(fontSize: isSmallScreen ? 12 : 14),
                   ),
                 ],
               ),
             ),
           ),
 
-          const SizedBox(height: 16),
+          SizedBox(height: isSmallScreen ? 12 : 16),
 
           // Settings options
           Card(
             child: Column(
               children: [
                 ListTile(
-                  leading: const Icon(Icons.person, color: Color(0xFFFF6B35)),
+                  leading: Icon(
+                    Icons.person,
+                    color: const Color(0xFFFF6B35),
+                    size: isSmallScreen ? 20 : 24,
+                  ),
                   title: Text(
                     'Profile',
-                    style: ThemeColors.getListItemTitleStyle(context),
+                    style: ThemeColors.getListItemTitleStyle(
+                      context,
+                    ).copyWith(fontSize: isSmallScreen ? 14 : 16),
                   ),
                   subtitle: Text(
                     'Edit your profile information',
-                    style: ThemeColors.getListItemSubtitleStyle(context),
+                    style: ThemeColors.getListItemSubtitleStyle(
+                      context,
+                    ).copyWith(fontSize: isSmallScreen ? 12 : 14),
                   ),
                   trailing: Icon(
                     Icons.arrow_forward_ios,
-                    size: 16,
+                    size: isSmallScreen ? 14 : 16,
                     color: ThemeColors.getHintColor(context),
                   ),
                   onTap: () {
                     // TODO: Navigate to profile screen
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Profile feature coming soon'),
+                      SnackBar(
+                        content: Text(
+                          'Profile feature coming soon',
+                          style: TextStyle(fontSize: isSmallScreen ? 12 : 14),
+                        ),
                       ),
                     );
                   },
@@ -192,17 +218,29 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ),
           ),
 
-          const SizedBox(height: 24),
+          SizedBox(height: isSmallScreen ? 16 : 24),
 
           // Logout button
           ElevatedButton.icon(
             onPressed: () => _logout(context),
-            icon: const Icon(Icons.logout),
-            label: const Text('Logout'),
+            icon: Icon(Icons.logout, size: isSmallScreen ? 18 : 20),
+            label: Text(
+              'Logout',
+              style: TextStyle(
+                fontSize: isSmallScreen ? 14 : 16,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color(0xFFD32F2F),
               foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(vertical: 16),
+              padding: EdgeInsets.symmetric(
+                vertical: isSmallScreen ? 12 : 16,
+                horizontal: isSmallScreen ? 16 : 24,
+              ),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(isSmallScreen ? 8 : 12),
+              ),
             ),
           ),
         ],
