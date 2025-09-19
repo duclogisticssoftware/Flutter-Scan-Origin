@@ -52,7 +52,7 @@ class _SidebarNavigationState extends State<SidebarNavigation> {
   @override
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
-    final isTablet = screenWidth > 768;
+    final isTablet = screenWidth > 768; //tablet
     final isDesktop = screenWidth > 1024;
 
     return Scaffold(
