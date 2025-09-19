@@ -1,0 +1,1 @@
+ /Users/caohungtran/Documents/Github/Flutter_QRScan_App/.dart_tool/flutter_build/4387566ab4501b23b604b10b766d8673/native_assets.json: 
