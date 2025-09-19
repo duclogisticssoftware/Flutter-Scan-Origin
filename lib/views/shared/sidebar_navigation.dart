@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:qrscan_app/views/Scan/scan_screen.dart';
 import 'package:qrscan_app/views/History/history_screen.dart';
 import 'package:qrscan_app/views/Settings/settings_screen.dart';
+import 'package:qrscan_app/views/Test/responsive_test_screen.dart';
 import 'package:qrscan_app/utils/theme_colors.dart';
 
 class SidebarNavigation extends StatefulWidget {
@@ -47,13 +48,24 @@ class _SidebarNavigationState extends State<SidebarNavigation> {
       title: 'Reports',
       screen: const PlaceholderScreen(title: 'Reports'),
     ),
+    NavigationItem(
+      icon: Icons.screen_rotation,
+      title: 'Responsive Test',
+      screen: const ResponsiveTestScreen(),
+    ),
   ];
 
   @override
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
-    final isTablet = screenWidth > 768; //tablet
-    final isDesktop = screenWidth > 1024;
+    final screenHeight = MediaQuery.of(context).size.height;
+
+    // Better breakpoints for macOS and desktop platforms
+    final isTablet = screenWidth >= 768 && screenWidth < 1200;
+    final isDesktop = screenWidth >= 1200;
+
+    // Additional check for macOS - consider it desktop if width > 1000
+    final isMacOSDesktop = screenWidth > 1000 && screenHeight > 600;
 
     return Scaffold(
       key: _scaffoldKey,
@@ -69,13 +81,13 @@ class _SidebarNavigationState extends State<SidebarNavigation> {
         backgroundColor: const Color(0xFFFF6B35),
         foregroundColor: Colors.white,
         elevation: 0,
-        centerTitle: !isTablet,
+        centerTitle: !isTablet && !isMacOSDesktop,
       ),
-      drawer: isDesktop ? null : _buildDrawer(),
+      drawer: (isDesktop || isMacOSDesktop) ? null : _buildDrawer(),
       body: Row(
         children: [
           // Desktop sidebar
-          if (isDesktop) _buildDesktopSidebar(),
+          if (isDesktop || isMacOSDesktop) _buildDesktopSidebar(),
 
           // Main content
           Expanded(child: _navigationItems[_selectedIndex].screen),

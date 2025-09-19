@@ -165,7 +165,8 @@ class _ScanScreenState extends State<ScanScreen> {
     final screenHeight = screenSize.height;
     final isSmallScreen = screenHeight < 700;
     final isVerySmallScreen = screenHeight < 600;
-    final isTablet = screenWidth > 768;
+    final isTablet = screenWidth >= 768 && screenWidth < 1200;
+    final isMacOSDesktop = screenWidth > 1000 && screenHeight > 600;
 
     return Stack(
       children: [
@@ -206,8 +207,8 @@ class _ScanScreenState extends State<ScanScreen> {
         // Scan instructions
         Positioned(
           top: isSmallScreen ? 30 : 50,
-          left: isTablet ? 40 : 20,
-          right: isTablet ? 40 : 20,
+          left: (isTablet || isMacOSDesktop) ? 40 : 20,
+          right: (isTablet || isMacOSDesktop) ? 40 : 20,
           child: Container(
             padding: EdgeInsets.all(isSmallScreen ? 12 : 16),
             decoration: BoxDecoration(
@@ -230,8 +231,8 @@ class _ScanScreenState extends State<ScanScreen> {
         if (!isVerySmallScreen)
           Center(
             child: Container(
-              width: isTablet ? 300 : 250,
-              height: isTablet ? 300 : 250,
+              width: (isTablet || isMacOSDesktop) ? 300 : 250,
+              height: (isTablet || isMacOSDesktop) ? 300 : 250,
               decoration: BoxDecoration(
                 border: Border.all(color: const Color(0xFFFF6B35), width: 3),
                 borderRadius: BorderRadius.circular(20),
