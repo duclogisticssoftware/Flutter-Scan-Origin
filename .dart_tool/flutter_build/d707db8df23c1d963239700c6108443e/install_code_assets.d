@@ -1,0 +1,1 @@
+ C:\\Users\\PCPV\\qrscan_app\\.dart_tool\\flutter_build\\d707db8df23c1d963239700c6108443e\\native_assets.json: 
