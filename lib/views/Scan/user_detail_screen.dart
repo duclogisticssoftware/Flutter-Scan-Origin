@@ -4,16 +4,16 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 
 class UserDetailScreen extends StatelessWidget {
-  final Map<String, dynamic> userData;
+  final Map<String, dynamic> hblData;
   final Map<String, dynamic>? scanInfo;
 
-  const UserDetailScreen({super.key, required this.userData, this.scanInfo});
+  const UserDetailScreen({super.key, required this.hblData, this.scanInfo});
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('User Information'),
+        title: const Text('HBL Information'),
         backgroundColor: const Color(0xFFFF6B35),
         foregroundColor: Colors.white,
       ),
@@ -22,14 +22,14 @@ class UserDetailScreen extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // User info card
+            // HBL info card
             Card(
               elevation: 4,
               child: Padding(
                 padding: const EdgeInsets.all(20),
                 child: Column(
                   children: [
-                    // Avatar
+                    // HBL Icon
                     Container(
                       width: 80,
                       height: 80,
@@ -38,26 +38,253 @@ class UserDetailScreen extends StatelessWidget {
                         borderRadius: BorderRadius.circular(40),
                       ),
                       child: const Icon(
-                        Icons.person,
+                        Icons.local_shipping,
                         size: 40,
                         color: Colors.white,
                       ),
                     ),
                     const SizedBox(height: 16),
 
-                    // User ID
+                    // HBL Number
                     Text(
-                      'ID: ${userData['id']}',
+                      'HBL: ${hblData['hblInfo']?['hblNo'] ?? 'Unknown'}',
                       style: ThemeColors.getCardTitleStyle(context),
                     ),
                     const SizedBox(height: 8),
 
-                    // Username
+                    // Job Number
                     Text(
-                      userData['username'] ?? 'Unknown',
+                      'Job: ${hblData['jobInfo']?['jobNo'] ?? 'Unknown'}',
                       style: ThemeColors.getTitleStyle(
                         context,
-                      ).copyWith(color: const Color(0xFFFF6B35)),
+                      ).copyWith(color: const Color(0xFFFF6B35), fontSize: 18),
+                    ),
+                    const SizedBox(height: 8),
+
+                    // Status
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 6,
+                      ),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF4CAF50).withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(color: const Color(0xFF4CAF50)),
+                      ),
+                      child: Text(
+                        'Status: ${hblData['hblInfo']?['statusHBL'] ?? 'Unknown'}',
+                        style: ThemeColors.getTitleStyle(context).copyWith(
+                          color: const Color(0xFF4CAF50),
+                          fontSize: 16,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+
+            const SizedBox(height: 16),
+
+            // HBL Details
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'HBL Details',
+                      style: ThemeColors.getCardTitleStyle(context),
+                    ),
+                    const SizedBox(height: 12),
+
+                    _InfoRow(
+                      icon: Icons.business,
+                      label: 'Shipper',
+                      value: hblData['hblInfo']?['shipper'] ?? 'N/A',
+                    ),
+                    const SizedBox(height: 8),
+
+                    _InfoRow(
+                      icon: Icons.person,
+                      label: 'Consignee',
+                      value: hblData['hblInfo']?['consignee'] ?? 'N/A',
+                    ),
+                    const SizedBox(height: 8),
+
+                    _InfoRow(
+                      icon: Icons.location_on,
+                      label: 'POL',
+                      value: hblData['hblInfo']?['polname'] ?? 'N/A',
+                    ),
+                    const SizedBox(height: 8),
+
+                    _InfoRow(
+                      icon: Icons.location_on,
+                      label: 'POD',
+                      value: hblData['hblInfo']?['podname'] ?? 'N/A',
+                    ),
+                    const SizedBox(height: 8),
+
+                    _InfoRow(
+                      icon: Icons.schedule,
+                      label: 'ETD',
+                      value: hblData['hblInfo']?['ETD'] != null
+                          ? DateTime.parse(
+                              hblData['hblInfo']['ETD'],
+                            ).toString().split(' ')[0]
+                          : 'N/A',
+                    ),
+                    const SizedBox(height: 8),
+
+                    _InfoRow(
+                      icon: Icons.schedule,
+                      label: 'ETA',
+                      value: hblData['hblInfo']?['ETA'] != null
+                          ? DateTime.parse(
+                              hblData['hblInfo']['ETA'],
+                            ).toString().split(' ')[0]
+                          : 'N/A',
+                    ),
+                  ],
+                ),
+              ),
+            ),
+
+            const SizedBox(height: 16),
+
+            // Additional HBL Information
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Additional Information',
+                      style: ThemeColors.getCardTitleStyle(context),
+                    ),
+                    const SizedBox(height: 12),
+
+                    _InfoRow(
+                      icon: Icons.inventory,
+                      label: 'Packages',
+                      value: hblData['hblInfo']?['packages'] ?? 'N/A',
+                    ),
+                    const SizedBox(height: 8),
+
+                    _InfoRow(
+                      icon: Icons.scale,
+                      label: 'Weight',
+                      value: hblData['hblInfo']?['weight'] ?? 'N/A',
+                    ),
+                    const SizedBox(height: 8),
+
+                    _InfoRow(
+                      icon: Icons.crop_free,
+                      label: 'Volume',
+                      value: hblData['hblInfo']?['volume'] ?? 'N/A',
+                    ),
+                    const SizedBox(height: 8),
+
+                    _InfoRow(
+                      icon: Icons.attach_money,
+                      label: 'Freight',
+                      value: hblData['hblInfo']?['freight'] ?? 'N/A',
+                    ),
+                    const SizedBox(height: 8),
+
+                    _InfoRow(
+                      icon: Icons.notifications,
+                      label: 'Notify',
+                      value: hblData['hblInfo']?['notify'] ?? 'N/A',
+                    ),
+                    const SizedBox(height: 8),
+
+                    _InfoRow(
+                      icon: Icons.description,
+                      label: 'Description',
+                      value: hblData['hblInfo']?['description'] ?? 'N/A',
+                    ),
+                  ],
+                ),
+              ),
+            ),
+
+            const SizedBox(height: 16),
+
+            // MBL Details
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'MBL Details',
+                      style: ThemeColors.getCardTitleStyle(context),
+                    ),
+                    const SizedBox(height: 12),
+
+                    _InfoRow(
+                      icon: Icons.local_shipping,
+                      label: 'MBL',
+                      value: hblData['mblInfo']?['mbl'] ?? 'N/A',
+                    ),
+                    const SizedBox(height: 8),
+
+                    _InfoRow(
+                      icon: Icons.directions_boat,
+                      label: 'Vessel',
+                      value: hblData['mblInfo']?['vessel'] ?? 'N/A',
+                    ),
+                    const SizedBox(height: 8),
+
+                    _InfoRow(
+                      icon: Icons.route,
+                      label: 'Voyage',
+                      value: hblData['mblInfo']?['voy'] ?? 'N/A',
+                    ),
+                  ],
+                ),
+              ),
+            ),
+
+            const SizedBox(height: 16),
+
+            // Job Details
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Job Details',
+                      style: ThemeColors.getCardTitleStyle(context),
+                    ),
+                    const SizedBox(height: 12),
+
+                    _InfoRow(
+                      icon: Icons.work,
+                      label: 'Job No',
+                      value: hblData['jobInfo']?['jobNo'] ?? 'N/A',
+                    ),
+                    const SizedBox(height: 8),
+
+                    _InfoRow(
+                      icon: Icons.category,
+                      label: 'Type',
+                      value: hblData['jobInfo']?['loai'] ?? 'N/A',
+                    ),
+                    const SizedBox(height: 8),
+
+                    _InfoRow(
+                      icon: Icons.info,
+                      label: 'Status',
+                      value: hblData['jobInfo']?['statusJob'] ?? 'N/A',
                     ),
                   ],
                 ),
@@ -91,9 +318,16 @@ class UserDetailScreen extends StatelessWidget {
                     const SizedBox(height: 8),
 
                     _InfoRow(
-                      icon: Icons.location_on,
+                      icon: Icons.check_circle,
                       label: 'Status',
-                      value: 'Successfully scanned',
+                      value: hblData['message'] ?? 'Successfully scanned',
+                    ),
+                    const SizedBox(height: 8),
+
+                    _InfoRow(
+                      icon: Icons.input,
+                      label: 'Input Type',
+                      value: hblData['inputType'] ?? 'QR_SCAN',
                     ),
 
                     if (scanInfo?['latitude'] != null &&

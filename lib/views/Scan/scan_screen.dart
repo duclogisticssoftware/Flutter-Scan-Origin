@@ -2,10 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import 'package:geolocator/geolocator.dart';
 import 'package:qrscan_app/config/app_config.dart';
 import 'package:qrscan_app/views/Scan/user_detail_screen.dart';
-import 'package:geolocator/geolocator.dart';
 import 'package:qrscan_app/services/auth_service.dart';
+import 'package:qrscan_app/services/location_tracking_service.dart';
 
 // Use shared storage and apiBase from config
 
@@ -19,6 +20,7 @@ class ScanScreen extends StatefulWidget {
 class _ScanScreenState extends State<ScanScreen> {
   bool _processing = false;
   MobileScannerController? _controller;
+  final TextEditingController _hblController = TextEditingController();
 
   @override
   void initState() {
@@ -29,6 +31,7 @@ class _ScanScreenState extends State<ScanScreen> {
   @override
   void dispose() {
     _controller?.dispose();
+    _hblController.dispose();
     super.dispose();
   }
 
@@ -40,52 +43,44 @@ class _ScanScreenState extends State<ScanScreen> {
     setState(() => _processing = true);
 
     try {
-      // Parse QR code as user ID
-      final userId = int.tryParse(code);
-      if (userId == null) {
-        _showError('Invalid QR code format. Expected user ID.');
+      // Parse QR code as HBL number
+      final hblNo = code.trim();
+      if (hblNo.isEmpty) {
+        _showError('Invalid QR code format. Expected HBL number.');
         return;
       }
 
       // Get current location
-      Position? position;
+      String? latitude;
+      String? longitude;
+
       try {
-        LocationPermission permission = await Geolocator.checkPermission();
-        if (permission == LocationPermission.denied) {
-          permission = await Geolocator.requestPermission();
-          if (permission == LocationPermission.denied) {
-            _showError(
-              'Location permission denied. Please enable location access.',
-            );
-            return;
-          }
-        }
-
-        if (permission == LocationPermission.deniedForever) {
-          _showError(
-            'Location permissions are permanently denied. Please enable in settings.',
-          );
-          return;
-        }
-
-        position = await Geolocator.getCurrentPosition(
+        final position = await Geolocator.getCurrentPosition(
           desiredAccuracy: LocationAccuracy.high,
         );
+        latitude = position.latitude.toString();
+        longitude = position.longitude.toString();
+        print('[FLUTTER] Current location: $latitude, $longitude');
       } catch (e) {
-        _showError('Failed to get location: $e');
-        return;
+        print('[FLUTTER] Failed to get location: $e');
+        // Vẫn tiếp tục gửi API mà không có vị trí
       }
 
-      // Call API with location data
+      // Call HBL scan API - gửi object theo format ScanHBLRequest
       final token = await AuthService.getToken();
+
+      // Tạo request body theo format ScanHBLRequest
       final requestBody = {
-        'userId': userId,
-        'latitude': position.latitude.toString(),
-        'longitude': position.longitude.toString(),
+        'HBLNo': hblNo,
+        'Latitude': latitude,
+        'Longitude': longitude,
       };
 
-      final userResp = await http.post(
-        Uri.parse('$apiBase/api/scan/scan-with-location'),
+      print('[FLUTTER] Sending request to: $apiBase/api/scan/scan-hbl');
+      print('[FLUTTER] Request body: $requestBody');
+
+      final hblResp = await http.post(
+        Uri.parse('$apiBase/api/scan/scan-hbl'),
         headers: {
           'Authorization': 'Bearer $token',
           'Content-Type': 'application/json',
@@ -93,10 +88,13 @@ class _ScanScreenState extends State<ScanScreen> {
         body: jsonEncode(requestBody),
       );
 
-      if (userResp.statusCode == 200) {
-        final responseData = jsonDecode(userResp.body);
-        _showUserDataWithLocation(responseData);
-      } else if (userResp.statusCode == 401) {
+      print('[FLUTTER] Response status: ${hblResp.statusCode}');
+      print('[FLUTTER] Response body: ${hblResp.body}');
+
+      if (hblResp.statusCode == 200) {
+        final responseData = jsonDecode(hblResp.body);
+        _showHBLDataWithLocation(responseData);
+      } else if (hblResp.statusCode == 401) {
         // Token hết hạn hoặc không hợp lệ
         await AuthService.logout();
         _showError('Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.');
@@ -104,10 +102,14 @@ class _ScanScreenState extends State<ScanScreen> {
         if (mounted) {
           Navigator.of(context).pushNamedAndRemoveUntil('/', (route) => false);
         }
-      } else if (userResp.statusCode == 404) {
-        _showError('User not found with ID: $userId');
+      } else if (hblResp.statusCode == 404) {
+        final errorData = jsonDecode(hblResp.body);
+        _showError('${errorData['message']}: ${errorData['hblNo']}');
+      } else if (hblResp.statusCode == 400) {
+        final errorData = jsonDecode(hblResp.body);
+        _showError('${errorData['message']}: ${errorData['hblNo']}');
       } else {
-        _showError('Failed to get user data (${userResp.statusCode})');
+        _showError('Failed to scan HBL (${hblResp.statusCode})');
       }
     } catch (e) {
       _showError('Error: $e');
@@ -116,15 +118,26 @@ class _ScanScreenState extends State<ScanScreen> {
     }
   }
 
-  void _showUserDataWithLocation(Map<String, dynamic> responseData) {
+  void _showHBLDataWithLocation(Map<String, dynamic> responseData) async {
     // Dừng camera trước khi chuyển màn hình
     _controller?.stop();
+
+    // Bắt đầu tracking vị trí cho HBL
+    final hblNo = responseData['hblInfo']?['hblNo'];
+    if (hblNo != null) {
+      final trackingStarted = await LocationTrackingService().startTracking(
+        hblNo,
+      );
+      if (trackingStarted) {
+        _showTrackingStartedDialog(hblNo);
+      }
+    }
 
     Navigator.of(context)
         .push(
           MaterialPageRoute(
             builder: (context) => UserDetailScreen(
-              userData: responseData['scannedUser'],
+              hblData: responseData,
               scanInfo: responseData['scanInfo'],
             ),
           ),
@@ -133,6 +146,42 @@ class _ScanScreenState extends State<ScanScreen> {
           // Khởi động lại camera khi quay về màn hình scan
           _controller?.start();
         });
+  }
+
+  void _showTrackingStartedDialog(String hblNo) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Row(
+          children: [
+            Icon(Icons.location_on, color: Color(0xFF4CAF50)),
+            SizedBox(width: 8),
+            Text('Location Tracking Started'),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('HBL: $hblNo'),
+            const SizedBox(height: 8),
+            const Text(
+              'Location tracking is now active. Your position will be sent to the server every 60 minutes.',
+            ),
+            const SizedBox(height: 8),
+            const Text(
+              'You can minimize the app and tracking will continue in the background.',
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('OK'),
+          ),
+        ],
+      ),
+    );
   }
 
   void _showError(String message) {
@@ -152,6 +201,136 @@ class _ScanScreenState extends State<ScanScreen> {
               _controller?.start();
             },
             child: const Text('OK'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _scanHBLManually(String hblNo) async {
+    if (_processing) return;
+    setState(() => _processing = true);
+
+    try {
+      // Debug logging
+      print('[FLUTTER] ===== START MANUAL INPUT HBL =====');
+      print('[FLUTTER] HBL Number: $hblNo');
+      print('[FLUTTER] API Base: $apiBase');
+
+      // Call HBL input API - chỉ gửi HBL number
+      final token = await AuthService.getToken();
+      print('[FLUTTER] Token obtained: ${token != null ? "YES" : "NO"}');
+      print('[FLUTTER] Token length: ${token?.length ?? 0}');
+
+      // Lấy vị trí hiện tại trước khi gửi API
+      String? latitude;
+      String? longitude;
+
+      try {
+        final position = await Geolocator.getCurrentPosition(
+          desiredAccuracy: LocationAccuracy.high,
+        );
+        latitude = position.latitude.toString();
+        longitude = position.longitude.toString();
+        print('[FLUTTER] Current location: $latitude, $longitude');
+      } catch (e) {
+        print('[FLUTTER] Failed to get location: $e');
+        // Vẫn tiếp tục gửi API mà không có vị trí
+      }
+
+      // API expect InputHBLRequest object
+      final requestBody = {
+        'HBLNo': hblNo,
+        'Latitude': latitude,
+        'Longitude': longitude,
+        'Ngay': DateTime.now().toIso8601String(),
+      };
+
+      print('[FLUTTER] Sending request to: $apiBase/api/scan/input-hbl');
+      print('[FLUTTER] Request body (JSON object): $requestBody');
+
+      final hblResp = await http.post(
+        Uri.parse('$apiBase/api/scan/input-hbl'),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+        body: jsonEncode(requestBody), // Send JSON object
+      );
+
+      print('[FLUTTER] Response status: ${hblResp.statusCode}');
+      print('[FLUTTER] Response body: ${hblResp.body}');
+
+      if (hblResp.statusCode == 200) {
+        print('[FLUTTER] ✅ SUCCESS: HBL input successful');
+        final responseData = jsonDecode(hblResp.body);
+        print('[FLUTTER] Response data: $responseData');
+        _showHBLDataWithLocation(responseData);
+      } else if (hblResp.statusCode == 401) {
+        print('[FLUTTER] ❌ ERROR: Unauthorized (401)');
+        // Token hết hạn hoặc không hợp lệ
+        await AuthService.logout();
+        _showError('Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.');
+        // Navigate về login screen
+        if (mounted) {
+          Navigator.of(context).pushNamedAndRemoveUntil('/', (route) => false);
+        }
+      } else if (hblResp.statusCode == 404) {
+        print('[FLUTTER] ❌ ERROR: HBL not found (404)');
+        final errorData = jsonDecode(hblResp.body);
+        print('[FLUTTER] Error data: $errorData');
+        _showError('${errorData['message']}: ${errorData['hblNo']}');
+      } else if (hblResp.statusCode == 400) {
+        print('[FLUTTER] ❌ ERROR: Bad request (400)');
+        final errorData = jsonDecode(hblResp.body);
+        print('[FLUTTER] Error data: $errorData');
+        _showError('${errorData['message']}: ${errorData['hblNo']}');
+      } else {
+        print('[FLUTTER] ❌ ERROR: Unknown status code ${hblResp.statusCode}');
+        _showError('Failed to input HBL (${hblResp.statusCode})');
+      }
+    } catch (e) {
+      print('[FLUTTER] ❌ EXCEPTION: $e');
+      _showError('Error: $e');
+    } finally {
+      print('[FLUTTER] ===== END MANUAL INPUT HBL =====');
+      setState(() => _processing = false);
+    }
+  }
+
+  void _showManualInputDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Nhập HBL Number'),
+        content: TextField(
+          controller: _hblController,
+          decoration: const InputDecoration(
+            hintText: 'Nhập HBL number...',
+            border: OutlineInputBorder(),
+          ),
+          autofocus: true,
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.of(context).pop();
+            },
+            child: const Text('Hủy'),
+          ),
+          TextButton(
+            onPressed: () {
+              final hblNo = _hblController.text.trim();
+              print('[FLUTTER] User input HBL: "$hblNo"');
+              if (hblNo.isNotEmpty) {
+                print('[FLUTTER] HBL is valid, proceeding with scan...');
+                Navigator.of(context).pop();
+                _scanHBLManually(hblNo);
+              } else {
+                print('[FLUTTER] HBL is empty, not proceeding');
+              }
+            },
+            child: const Text('Quét'),
           ),
         ],
       ),
@@ -215,14 +394,33 @@ class _ScanScreenState extends State<ScanScreen> {
               color: Colors.black.withOpacity(0.7),
               borderRadius: BorderRadius.circular(12),
             ),
-            child: Text(
-              'Point camera at QR code to scan user ID',
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: isSmallScreen ? 14 : 16,
-                fontWeight: FontWeight.w500,
-              ),
-              textAlign: TextAlign.center,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  'Point camera at QR code to scan HBL',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: isSmallScreen ? 14 : 16,
+                    fontWeight: FontWeight.w500,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                SizedBox(height: isSmallScreen ? 8 : 12),
+                ElevatedButton.icon(
+                  onPressed: _showManualInputDialog,
+                  icon: const Icon(Icons.keyboard, size: 18),
+                  label: const Text('Nhập HBL'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFFFF6B35),
+                    foregroundColor: Colors.white,
+                    padding: EdgeInsets.symmetric(
+                      horizontal: isSmallScreen ? 12 : 16,
+                      vertical: isSmallScreen ? 8 : 12,
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
         ),
@@ -287,7 +485,7 @@ class _ScanScreenState extends State<ScanScreen> {
                 borderRadius: BorderRadius.circular(8),
               ),
               child: const Text(
-                'Align QR code within the frame',
+                'Align HBL QR code within the frame',
                 style: TextStyle(
                   color: Colors.white,
                   fontSize: 12,
