@@ -50,7 +50,7 @@ class LocationTrackingService {
       _notifyStateChanged();
 
       // Bắt đầu timer để gửi vị trí mỗi 1 phút
-      _locationTimer = Timer.periodic(const Duration(minutes: 1), (timer) {
+      _locationTimer = Timer.periodic(const Duration(minutes: 30), (timer) {
         _getCurrentLocationAndSend();
       });
 
@@ -67,6 +67,9 @@ class LocationTrackingService {
   // Dừng tracking
   Future<void> stopTracking() async {
     if (!_isTracking) return;
+
+    // Gửi end location trước khi dừng tracking
+    await _sendEndLocation();
 
     _isTracking = false;
     _currentHBL = null;
@@ -176,6 +179,51 @@ class LocationTrackingService {
   // Dừng tracking khi đóng app
   Future<void> onAppClose() async {
     await stopTracking();
+  }
+
+  // Gửi end location khi dừng tracking
+  Future<void> _sendEndLocation() async {
+    if (_currentHBL == null) return;
+
+    try {
+      // Lấy vị trí cuối cùng
+      final position = await Geolocator.getCurrentPosition(
+        desiredAccuracy: LocationAccuracy.high,
+        timeLimit: const Duration(seconds: 10),
+      );
+
+      final token = await AuthService.getToken();
+      if (token == null) return;
+
+      final requestBody = {
+        'HBLNo': _currentHBL,
+        'Latitude': position.latitude.toString(),
+        'Longitude': position.longitude.toString(),
+        'Timestamp': DateTime.now().toIso8601String(),
+        'Accuracy': position.accuracy,
+        'Altitude': position.altitude,
+        'Speed': position.speed,
+        'Heading': position.heading,
+        'IsEnd': true, // Đánh dấu đây là end location
+      };
+
+      final response = await http.post(
+        Uri.parse('$apiBase/api/scan/save-hbl-location'),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+        body: jsonEncode(requestBody),
+      );
+
+      if (response.statusCode == 200) {
+        debugPrint('End location sent successfully for HBL: $_currentHBL');
+      } else {
+        debugPrint('Failed to send end location: ${response.statusCode}');
+      }
+    } catch (e) {
+      debugPrint('Error sending end location: $e');
+    }
   }
 
   // Thêm callback để notify khi trạng thái thay đổi

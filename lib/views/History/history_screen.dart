@@ -493,11 +493,13 @@ class _HistoryScreenState extends State<HistoryScreen> {
     );
   }
 
-  /// Hiển thị timeline cho một HBL (compact version)
+  /// Hiển thị timeline cho một HBL với slider
   Widget _buildHBLTimeline(
     List<Map<String, dynamic>> locations,
     bool isSmallScreen,
   ) {
+    if (locations.isEmpty) return const SizedBox.shrink();
+
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: Column(
@@ -517,83 +519,170 @@ class _HistoryScreenState extends State<HistoryScreen> {
               ),
             ],
           ),
-          const SizedBox(height: 8),
-          // Compact timeline với horizontal scroll
-          SizedBox(
-            height: 60,
-            child: ListView.builder(
-              scrollDirection: Axis.horizontal,
-              itemCount: locations.length,
-              itemBuilder: (context, index) {
-                final location = locations[index];
-                final sequence = location['sequence'] ?? (index + 1);
-                final isStart = location['isStart'] == true || index == 0;
-                final isEnd =
-                    location['isEnd'] == true || index == locations.length - 1;
+          const SizedBox(height: 12),
+          // Timeline với slider
+          _buildTimelineSlider(locations, isSmallScreen),
+        ],
+      ),
+    );
+  }
 
-                return Container(
-                  width: 80,
-                  margin: const EdgeInsets.only(right: 8),
-                  child: Column(
-                    children: [
-                      // Marker
-                      Container(
-                        width: 24,
-                        height: 24,
-                        decoration: BoxDecoration(
-                          color: isStart
-                              ? Colors.green
-                              : isEnd
-                              ? Colors.red
-                              : Colors.blue,
-                          shape: BoxShape.circle,
-                          border: Border.all(color: Colors.white, width: 2),
-                        ),
-                        child: Center(
-                          child: Text(
-                            isStart
-                                ? 'S'
-                                : isEnd
-                                ? 'E'
-                                : '$sequence',
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontWeight: FontWeight.bold,
-                              fontSize: 10,
-                            ),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      // Time
-                      Text(
-                        _formatTime(location['scannedAt']),
-                        style: TextStyle(fontSize: 10, color: Colors.grey[600]),
-                        textAlign: TextAlign.center,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      const SizedBox(height: 2),
-                      // Sequence
-                      Text(
-                        isStart
-                            ? 'Start'
-                            : isEnd
-                            ? 'End'
-                            : 'P$sequence',
-                        style: TextStyle(
-                          fontSize: 9,
-                          fontWeight: FontWeight.w500,
-                          color: Colors.grey[700],
-                        ),
-                        textAlign: TextAlign.center,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ],
+  /// Tạo timeline slider
+  Widget _buildTimelineSlider(
+    List<Map<String, dynamic>> locations,
+    bool isSmallScreen,
+  ) {
+    return StatefulBuilder(
+      builder: (context, setState) {
+        double sliderValue = 0.0;
+        final maxValue = (locations.length - 1).toDouble();
+
+        return Column(
+          children: [
+            // Slider
+            SliderTheme(
+              data: SliderTheme.of(context).copyWith(
+                activeTrackColor: ThemeColors.getPrimaryColor(context),
+                inactiveTrackColor: Colors.grey[300],
+                thumbColor: ThemeColors.getPrimaryColor(context),
+                overlayColor: ThemeColors.getPrimaryColor(
+                  context,
+                ).withOpacity(0.2),
+                trackHeight: 4.0,
+                thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 8),
+              ),
+              child: Slider(
+                value: sliderValue,
+                min: 0.0,
+                max: maxValue,
+                divisions: locations.length - 1,
+                onChanged: (value) {
+                  setState(() {
+                    sliderValue = value;
+                  });
+                },
+              ),
+            ),
+            const SizedBox(height: 8),
+            // Hiển thị thông tin điểm hiện tại
+            _buildCurrentPointInfo(
+              locations,
+              sliderValue.round(),
+              isSmallScreen,
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  /// Hiển thị thông tin điểm hiện tại được chọn
+  Widget _buildCurrentPointInfo(
+    List<Map<String, dynamic>> locations,
+    int currentIndex,
+    bool isSmallScreen,
+  ) {
+    if (currentIndex >= locations.length) return const SizedBox.shrink();
+
+    final location = locations[currentIndex];
+    final sequence = location['sequence'] ?? (currentIndex + 1);
+    final isStart = location['isStart'] == true || currentIndex == 0;
+    final isEnd =
+        location['isEnd'] == true || currentIndex == locations.length - 1;
+
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.grey[50],
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: Colors.grey[300]!),
+      ),
+      child: Row(
+        children: [
+          // Marker
+          Container(
+            width: 32,
+            height: 32,
+            decoration: BoxDecoration(
+              color: isStart
+                  ? Colors.green
+                  : isEnd
+                  ? Colors.red
+                  : Colors.blue,
+              shape: BoxShape.circle,
+              border: Border.all(color: Colors.white, width: 2),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.1),
+                  blurRadius: 4,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            child: Center(
+              child: Text(
+                isStart
+                    ? 'S'
+                    : isEnd
+                    ? 'E'
+                    : '$sequence',
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 12,
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(width: 12),
+          // Thông tin chi tiết
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  isStart
+                      ? 'Start Point'
+                      : isEnd
+                      ? 'End Point'
+                      : 'Point $sequence',
+                  style: TextStyle(
+                    fontSize: isSmallScreen ? 14 : 16,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.grey[800],
                   ),
-                );
-              },
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  _formatDetailedTime(location['scannedAt']),
+                  style: TextStyle(
+                    fontSize: isSmallScreen ? 12 : 14,
+                    color: Colors.grey[600],
+                  ),
+                ),
+                if (location['latitude'] != null &&
+                    location['longitude'] != null) ...[
+                  const SizedBox(height: 2),
+                  Text(
+                    '${location['latitude']}, ${location['longitude']}',
+                    style: TextStyle(
+                      fontSize: isSmallScreen ? 10 : 12,
+                      color: Colors.grey[500],
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+          // Nút xem chi tiết
+          IconButton(
+            onPressed: () {
+              _showLocationDetails(location, currentIndex, locations.length);
+            },
+            icon: Icon(
+              Icons.info_outline,
+              color: ThemeColors.getPrimaryColor(context),
+              size: 20,
             ),
           ),
         ],
@@ -601,8 +690,8 @@ class _HistoryScreenState extends State<HistoryScreen> {
     );
   }
 
-  /// Format time ngắn gọn
-  String _formatTime(String? dateTimeString) {
+  /// Hiển thị thời gian chi tiết
+  String _formatDetailedTime(String? dateTimeString) {
     if (dateTimeString == null) return 'N/A';
 
     try {
@@ -611,17 +700,78 @@ class _HistoryScreenState extends State<HistoryScreen> {
       final difference = now.difference(dateTime);
 
       if (difference.inDays > 0) {
-        return '${difference.inDays}d ago';
+        return '${difference.inDays} days ago (${dateTime.day}/${dateTime.month}/${dateTime.year})';
       } else if (difference.inHours > 0) {
-        return '${difference.inHours}h ago';
+        return '${difference.inHours} hours ago (${dateTime.hour}:${dateTime.minute.toString().padLeft(2, '0')})';
       } else if (difference.inMinutes > 0) {
-        return '${difference.inMinutes}m ago';
+        return '${difference.inMinutes} minutes ago';
       } else {
-        return 'Now';
+        return 'Just now';
       }
     } catch (e) {
       return 'N/A';
     }
+  }
+
+  /// Hiển thị chi tiết location
+  void _showLocationDetails(
+    Map<String, dynamic> location,
+    int index,
+    int total,
+  ) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('Location Details - Point ${index + 1}/$total'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildDetailRow(
+              'Sequence',
+              '${location['sequence'] ?? (index + 1)}',
+            ),
+            _buildDetailRow('Time', _formatDetailedTime(location['scannedAt'])),
+            if (location['latitude'] != null)
+              _buildDetailRow('Latitude', location['latitude'].toString()),
+            if (location['longitude'] != null)
+              _buildDetailRow('Longitude', location['longitude'].toString()),
+            if (location['accuracy'] != null)
+              _buildDetailRow('Accuracy', '${location['accuracy']}m'),
+            if (location['speed'] != null)
+              _buildDetailRow('Speed', '${location['speed']} m/s'),
+            if (location['heading'] != null)
+              _buildDetailRow('Heading', '${location['heading']}°'),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Close'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Tạo row thông tin chi tiết
+  Widget _buildDetailRow(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            width: 80,
+            child: Text(
+              '$label:',
+              style: const TextStyle(fontWeight: FontWeight.w500),
+            ),
+          ),
+          Expanded(child: Text(value)),
+        ],
+      ),
+    );
   }
 
   /// Tính toán bounds cho một HBL cụ thể
