@@ -159,9 +159,9 @@
     },
     {
       "name": "flutter_svg",
-      "rootUri": "file:///C:/Users/PCPV/AppData/Local/Pub/Cache/hosted/pub.dev/flutter_svg-2.0.9",
+      "rootUri": "file:///C:/Users/PCPV/AppData/Local/Pub/Cache/hosted/pub.dev/flutter_svg-2.2.1",
       "packageUri": "lib/",
-      "languageVersion": "2.19"
+      "languageVersion": "3.7"
     },
     {
       "name": "flutter_test",
@@ -309,7 +309,7 @@
     },
     {
       "name": "logger",
-      "rootUri": "file:///C:/Users/PCPV/AppData/Local/Pub/Cache/hosted/pub.dev/logger-2.6.1",
+      "rootUri": "file:///C:/Users/PCPV/AppData/Local/Pub/Cache/hosted/pub.dev/logger-2.6.2",
       "packageUri": "lib/",
       "languageVersion": "2.17"
     },
@@ -339,7 +339,7 @@
     },
     {
       "name": "mobile_scanner",
-      "rootUri": "file:///C:/Users/PCPV/AppData/Local/Pub/Cache/hosted/pub.dev/mobile_scanner-7.0.1",
+      "rootUri": "file:///C:/Users/PCPV/AppData/Local/Pub/Cache/hosted/pub.dev/mobile_scanner-7.1.2",
       "packageUri": "lib/",
       "languageVersion": "3.7"
     },
@@ -381,15 +381,15 @@
     },
     {
       "name": "path_provider_android",
-      "rootUri": "file:///C:/Users/PCPV/AppData/Local/Pub/Cache/hosted/pub.dev/path_provider_android-2.2.18",
+      "rootUri": "file:///C:/Users/PCPV/AppData/Local/Pub/Cache/hosted/pub.dev/path_provider_android-2.2.20",
       "packageUri": "lib/",
-      "languageVersion": "3.7"
+      "languageVersion": "3.9"
     },
     {
       "name": "path_provider_foundation",
-      "rootUri": "file:///C:/Users/PCPV/AppData/Local/Pub/Cache/hosted/pub.dev/path_provider_foundation-2.4.2",
+      "rootUri": "file:///C:/Users/PCPV/AppData/Local/Pub/Cache/hosted/pub.dev/path_provider_foundation-2.4.3",
       "packageUri": "lib/",
-      "languageVersion": "3.7"
+      "languageVersion": "3.9"
     },
     {
       "name": "path_provider_linux",
@@ -495,15 +495,15 @@
     },
     {
       "name": "shared_preferences_android",
-      "rootUri": "file:///C:/Users/PCPV/AppData/Local/Pub/Cache/hosted/pub.dev/shared_preferences_android-2.4.12",
+      "rootUri": "file:///C:/Users/PCPV/AppData/Local/Pub/Cache/hosted/pub.dev/shared_preferences_android-2.4.15",
       "packageUri": "lib/",
-      "languageVersion": "3.7"
+      "languageVersion": "3.9"
     },
     {
       "name": "shared_preferences_foundation",
-      "rootUri": "file:///C:/Users/PCPV/AppData/Local/Pub/Cache/hosted/pub.dev/shared_preferences_foundation-2.5.4",
+      "rootUri": "file:///C:/Users/PCPV/AppData/Local/Pub/Cache/hosted/pub.dev/shared_preferences_foundation-2.5.5",
       "packageUri": "lib/",
-      "languageVersion": "3.4"
+      "languageVersion": "3.9"
     },
     {
       "name": "shared_preferences_linux",
@@ -633,21 +633,21 @@
     },
     {
       "name": "vector_graphics",
-      "rootUri": "file:///C:/Users/PCPV/AppData/Local/Pub/Cache/hosted/pub.dev/vector_graphics-1.1.10+1",
+      "rootUri": "file:///C:/Users/PCPV/AppData/Local/Pub/Cache/hosted/pub.dev/vector_graphics-1.1.19",
       "packageUri": "lib/",
-      "languageVersion": "2.17"
+      "languageVersion": "3.6"
     },
     {
       "name": "vector_graphics_codec",
-      "rootUri": "file:///C:/Users/PCPV/AppData/Local/Pub/Cache/hosted/pub.dev/vector_graphics_codec-1.1.10+1",
+      "rootUri": "file:///C:/Users/PCPV/AppData/Local/Pub/Cache/hosted/pub.dev/vector_graphics_codec-1.1.13",
       "packageUri": "lib/",
-      "languageVersion": "2.17"
+      "languageVersion": "3.4"
     },
     {
       "name": "vector_graphics_compiler",
-      "rootUri": "file:///C:/Users/PCPV/AppData/Local/Pub/Cache/hosted/pub.dev/vector_graphics_compiler-1.1.10+1",
+      "rootUri": "file:///C:/Users/PCPV/AppData/Local/Pub/Cache/hosted/pub.dev/vector_graphics_compiler-1.1.19",
       "packageUri": "lib/",
-      "languageVersion": "2.19"
+      "languageVersion": "3.7"
     },
     {
       "name": "vector_math",
@@ -669,7 +669,7 @@
     },
     {
       "name": "win32",
-      "rootUri": "file:///C:/Users/PCPV/AppData/Local/Pub/Cache/hosted/pub.dev/win32-5.14.0",
+      "rootUri": "file:///C:/Users/PCPV/AppData/Local/Pub/Cache/hosted/pub.dev/win32-5.15.0",
       "packageUri": "lib/",
       "languageVersion": "3.8"
     },

@@ -30,7 +30,7 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  mobile_scanner: ^7.0.1    # hoặc phiên bản mới nhất
+  mobile_scanner: ^7.1.2    # phiên bản mới nhất
   geolocator: ^14.0.2
   permission_handler: ^12.0.1
   http: ^1.1.0 
