@@ -387,11 +387,7 @@ class _ScanScreenState extends State<ScanScreen> {
 
     return Stack(
       children: [
-        MobileScanner(
-          controller: _controller,
-          onDetect: _onDetect,
-          fit: BoxFit.cover,
-        ),
+        MobileScanner(controller: _controller, onDetect: _onDetect),
 
         // Processing overlay
         if (_processing)
