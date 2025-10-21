@@ -55,12 +55,31 @@ class _ScanScreenState extends State<ScanScreen> {
       String? longitude;
 
       try {
-        final position = await Geolocator.getCurrentPosition(
-          desiredAccuracy: LocationAccuracy.high,
-        );
-        latitude = position.latitude.toString();
-        longitude = position.longitude.toString();
-        print('[FLUTTER] Current location: $latitude, $longitude');
+        // Kiểm tra GPS có bật không
+        bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
+        if (!serviceEnabled) {
+          print('[FLUTTER] Location services are disabled');
+        } else {
+          final position = await Geolocator.getCurrentPosition(
+            desiredAccuracy: LocationAccuracy.bestForNavigation,
+            timeLimit: const Duration(seconds: 30),
+            forceAndroidLocationManager: false, // Sử dụng FusedLocationProvider
+          );
+
+          // Kiểm tra độ chính xác
+          if (position.accuracy <= 50) {
+            // Chỉ sử dụng nếu sai số <= 50m
+            latitude = position.latitude.toString();
+            longitude = position.longitude.toString();
+            print(
+              '[FLUTTER] Current location: $latitude, $longitude (accuracy: ${position.accuracy}m)',
+            );
+          } else {
+            print(
+              '[FLUTTER] Location accuracy too low: ${position.accuracy}m, using without location',
+            );
+          }
+        }
       } catch (e) {
         print('[FLUTTER] Failed to get location: $e');
         // Vẫn tiếp tục gửi API mà không có vị trí
@@ -227,12 +246,31 @@ class _ScanScreenState extends State<ScanScreen> {
       String? longitude;
 
       try {
-        final position = await Geolocator.getCurrentPosition(
-          desiredAccuracy: LocationAccuracy.high,
-        );
-        latitude = position.latitude.toString();
-        longitude = position.longitude.toString();
-        print('[FLUTTER] Current location: $latitude, $longitude');
+        // Kiểm tra GPS có bật không
+        bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
+        if (!serviceEnabled) {
+          print('[FLUTTER] Location services are disabled');
+        } else {
+          final position = await Geolocator.getCurrentPosition(
+            desiredAccuracy: LocationAccuracy.bestForNavigation,
+            timeLimit: const Duration(seconds: 30),
+            forceAndroidLocationManager: false, // Sử dụng FusedLocationProvider
+          );
+
+          // Kiểm tra độ chính xác
+          if (position.accuracy <= 50) {
+            // Chỉ sử dụng nếu sai số <= 50m
+            latitude = position.latitude.toString();
+            longitude = position.longitude.toString();
+            print(
+              '[FLUTTER] Current location: $latitude, $longitude (accuracy: ${position.accuracy}m)',
+            );
+          } else {
+            print(
+              '[FLUTTER] Location accuracy too low: ${position.accuracy}m, using without location',
+            );
+          }
+        }
       } catch (e) {
         print('[FLUTTER] Failed to get location: $e');
         // Vẫn tiếp tục gửi API mà không có vị trí
