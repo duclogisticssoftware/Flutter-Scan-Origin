@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:qrscan_app/views/shared/sidebar_navigation.dart';
 import 'package:qrscan_app/views/Auth/login_screen.dart';
 import 'package:qrscan_app/services/auth_service.dart';
@@ -8,10 +9,15 @@ import 'package:provider/provider.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await ThemeService.init();
 
-  // Khôi phục trạng thái tracking nếu có
-  await LocationTrackingService().restoreTrackingState();
+  try {
+    await ThemeService.init();
+
+    // Khôi phục trạng thái tracking nếu có
+    await LocationTrackingService().restoreTrackingState();
+  } catch (e) {
+    debugPrint('Error initializing app: $e');
+  }
 
   runApp(const MyApp());
 }
@@ -84,19 +90,26 @@ class _AuthGateState extends State<AuthGate> {
 
   Future<void> _checkAuthentication() async {
     try {
+      debugPrint('[AUTH] Checking authentication...');
       // Kiểm tra authentication status
       final isAuthenticated = await AuthService.isAuthenticated();
+      debugPrint('[AUTH] Authentication result: $isAuthenticated');
 
-      setState(() {
-        _isAuthenticated = isAuthenticated;
-        _isLoading = false;
-      });
+      if (mounted) {
+        setState(() {
+          _isAuthenticated = isAuthenticated;
+          _isLoading = false;
+        });
+      }
     } catch (e) {
+      debugPrint('[AUTH] Error checking authentication: $e');
       // Có lỗi, cần login lại
-      setState(() {
-        _isAuthenticated = false;
-        _isLoading = false;
-      });
+      if (mounted) {
+        setState(() {
+          _isAuthenticated = false;
+          _isLoading = false;
+        });
+      }
     }
   }
 
