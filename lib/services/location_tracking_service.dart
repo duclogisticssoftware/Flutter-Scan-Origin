@@ -49,8 +49,8 @@ class LocationTrackingService {
       // Notify state changed
       _notifyStateChanged();
 
-      // Bắt đầu timer để gửi vị trí mỗi 1 phút
-      _locationTimer = Timer.periodic(const Duration(minutes: 30), (timer) {
+      // Bắt đầu timer để gửi vị trí mỗi 15 phút
+      _locationTimer = Timer.periodic(const Duration(minutes: 10), (timer) {
         _getCurrentLocationAndSend();
       });
 

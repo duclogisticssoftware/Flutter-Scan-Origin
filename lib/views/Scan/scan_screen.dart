@@ -62,7 +62,7 @@ class _ScanScreenState extends State<ScanScreen> {
         } else {
           final position = await Geolocator.getCurrentPosition(
             desiredAccuracy: LocationAccuracy.bestForNavigation,
-            timeLimit: const Duration(seconds: 30),
+            timeLimit: const Duration(seconds: 10),
             forceAndroidLocationManager: false, // Sử dụng FusedLocationProvider
           );
 
@@ -253,7 +253,7 @@ class _ScanScreenState extends State<ScanScreen> {
         } else {
           final position = await Geolocator.getCurrentPosition(
             desiredAccuracy: LocationAccuracy.bestForNavigation,
-            timeLimit: const Duration(seconds: 30),
+            timeLimit: const Duration(seconds: 15),
             forceAndroidLocationManager: false, // Sử dụng FusedLocationProvider
           );
 

@@ -17,6 +17,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final TextEditingController _fullName = TextEditingController();
   final TextEditingController _password = TextEditingController();
   final TextEditingController _confirm = TextEditingController();
+  // LMS Database fields
+  final TextEditingController _lmsServer = TextEditingController();
+  final TextEditingController _lmsDatabase = TextEditingController();
+  final TextEditingController _lmsUsername = TextEditingController();
+  final TextEditingController _lmsPassword = TextEditingController();
   bool _loading = false;
   String? _error;
   String? _serverMessage;
@@ -28,6 +33,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
     _fullName.addListener(_onFieldChanged);
     _password.addListener(_onFieldChanged);
     _confirm.addListener(_onFieldChanged);
+    _lmsServer.addListener(_onFieldChanged);
+    _lmsDatabase.addListener(_onFieldChanged);
+    _lmsUsername.addListener(_onFieldChanged);
+    _lmsPassword.addListener(_onFieldChanged);
   }
 
   @override
@@ -36,10 +45,18 @@ class _RegisterScreenState extends State<RegisterScreen> {
     _fullName.removeListener(_onFieldChanged);
     _password.removeListener(_onFieldChanged);
     _confirm.removeListener(_onFieldChanged);
+    _lmsServer.removeListener(_onFieldChanged);
+    _lmsDatabase.removeListener(_onFieldChanged);
+    _lmsUsername.removeListener(_onFieldChanged);
+    _lmsPassword.removeListener(_onFieldChanged);
     _email.dispose();
     _fullName.dispose();
     _password.dispose();
     _confirm.dispose();
+    _lmsServer.dispose();
+    _lmsDatabase.dispose();
+    _lmsUsername.dispose();
+    _lmsPassword.dispose();
     super.dispose();
   }
 
@@ -69,11 +86,19 @@ class _RegisterScreenState extends State<RegisterScreen> {
     final fullName = _fullName.text.trim();
     final password = _password.text;
     final confirm = _confirm.text;
+    final lmsServer = _lmsServer.text.trim();
+    final lmsDatabase = _lmsDatabase.text.trim();
+    final lmsUsername = _lmsUsername.text.trim();
+    final lmsPassword = _lmsPassword.text.trim();
     return !_loading &&
         email.isNotEmpty &&
         fullName.isNotEmpty &&
         password.isNotEmpty &&
         confirm.isNotEmpty &&
+        lmsServer.isNotEmpty &&
+        lmsDatabase.isNotEmpty &&
+        lmsUsername.isNotEmpty &&
+        lmsPassword.isNotEmpty &&
         _isValidEmail(email) &&
         _isStrongPassword(password) &&
         password == confirm;
@@ -84,6 +109,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
     final fullName = _fullName.text.trim();
     final password = _password.text;
     final confirm = _confirm.text;
+    final lmsServer = _lmsServer.text.trim();
+    final lmsDatabase = _lmsDatabase.text.trim();
+    final lmsUsername = _lmsUsername.text.trim();
+    final lmsPassword = _lmsPassword.text.trim();
 
     // Validate email format
     if (!_isValidEmail(email)) {
@@ -106,6 +135,24 @@ class _RegisterScreenState extends State<RegisterScreen> {
       return;
     }
 
+    // Validate LMS fields
+    if (lmsServer.isEmpty) {
+      setState(() => _error = 'LMS Server không được để trống');
+      return;
+    }
+    if (lmsDatabase.isEmpty) {
+      setState(() => _error = 'LMS Database không được để trống');
+      return;
+    }
+    if (lmsUsername.isEmpty) {
+      setState(() => _error = 'LMS Username không được để trống');
+      return;
+    }
+    if (lmsPassword.isEmpty) {
+      setState(() => _error = 'LMS Password không được để trống');
+      return;
+    }
+
     setState(() {
       _loading = true;
       _error = null;
@@ -117,6 +164,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
         'Email': email,
         'PasswordHash': password, // Send as PasswordHash to match C# API
         'FullName': fullName, // Use user input FullName
+        'LMSServer': lmsServer,
+        'LMSDatabase': lmsDatabase,
+        'LMSUsername': lmsUsername,
+        'LMSPassword': lmsPassword,
       };
 
       debugPrint('[REGISTER] POST $url');
@@ -344,6 +395,185 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 : '',
             style: ThemeColors.getErrorStyle(context).copyWith(fontSize: 12),
           ),
+          SizedBox(height: isSmallScreen ? 16 : 20),
+
+          // LMS Database Section
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: ThemeColors.getCardColor(context),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: ThemeColors.getBorderColor(context)),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'LMS Database Connection',
+                  style: ThemeColors.getLabelStyle(
+                    context,
+                  ).copyWith(fontSize: 16, fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Thông tin kết nối database LMS của công ty bạn',
+                  style: ThemeColors.getHintStyle(
+                    context,
+                  ).copyWith(fontSize: 12),
+                ),
+                SizedBox(height: isSmallScreen ? 16 : 20),
+
+                // LMS Server field
+                Text('LMS Server', style: ThemeColors.getLabelStyle(context)),
+                const SizedBox(height: 8),
+                TextField(
+                  controller: _lmsServer,
+                  style: ThemeColors.getTextStyle(context),
+                  decoration: InputDecoration(
+                    hintText: 'Enter LMS server address',
+                    hintStyle: ThemeColors.getHintStyle(context),
+                    prefixIcon: Icon(
+                      Icons.dns_outlined,
+                      color: ThemeColors.getHintColor(context),
+                    ),
+                    filled: true,
+                    fillColor: ThemeColors.getBackgroundColor(context),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(
+                        color: ThemeColors.getBorderColor(context),
+                      ),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(
+                        color: ThemeColors.getBorderColor(context),
+                      ),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(
+                        color: ThemeColors.getPrimaryColor(context),
+                      ),
+                    ),
+                  ),
+                ),
+                SizedBox(height: isSmallScreen ? 16 : 20),
+
+                // LMS Database field
+                Text('LMS Database', style: ThemeColors.getLabelStyle(context)),
+                const SizedBox(height: 8),
+                TextField(
+                  controller: _lmsDatabase,
+                  style: ThemeColors.getTextStyle(context),
+                  decoration: InputDecoration(
+                    hintText: 'Enter LMS database name',
+                    hintStyle: ThemeColors.getHintStyle(context),
+                    prefixIcon: Icon(
+                      Icons.storage_outlined,
+                      color: ThemeColors.getHintColor(context),
+                    ),
+                    filled: true,
+                    fillColor: ThemeColors.getBackgroundColor(context),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(
+                        color: ThemeColors.getBorderColor(context),
+                      ),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(
+                        color: ThemeColors.getBorderColor(context),
+                      ),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(
+                        color: ThemeColors.getPrimaryColor(context),
+                      ),
+                    ),
+                  ),
+                ),
+                SizedBox(height: isSmallScreen ? 16 : 20),
+
+                // LMS Username field
+                Text('LMS Username', style: ThemeColors.getLabelStyle(context)),
+                const SizedBox(height: 8),
+                TextField(
+                  controller: _lmsUsername,
+                  style: ThemeColors.getTextStyle(context),
+                  decoration: InputDecoration(
+                    hintText: 'Enter LMS username',
+                    hintStyle: ThemeColors.getHintStyle(context),
+                    prefixIcon: Icon(
+                      Icons.person_outline,
+                      color: ThemeColors.getHintColor(context),
+                    ),
+                    filled: true,
+                    fillColor: ThemeColors.getBackgroundColor(context),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(
+                        color: ThemeColors.getBorderColor(context),
+                      ),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(
+                        color: ThemeColors.getBorderColor(context),
+                      ),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(
+                        color: ThemeColors.getPrimaryColor(context),
+                      ),
+                    ),
+                  ),
+                ),
+                SizedBox(height: isSmallScreen ? 16 : 20),
+
+                // LMS Password field
+                Text('LMS Password', style: ThemeColors.getLabelStyle(context)),
+                const SizedBox(height: 8),
+                TextField(
+                  controller: _lmsPassword,
+                  obscureText: true,
+                  style: ThemeColors.getTextStyle(context),
+                  decoration: InputDecoration(
+                    hintText: 'Enter LMS password',
+                    hintStyle: ThemeColors.getHintStyle(context),
+                    prefixIcon: Icon(
+                      Icons.lock_outline,
+                      color: ThemeColors.getHintColor(context),
+                    ),
+                    filled: true,
+                    fillColor: ThemeColors.getBackgroundColor(context),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(
+                        color: ThemeColors.getBorderColor(context),
+                      ),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(
+                        color: ThemeColors.getBorderColor(context),
+                      ),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(
+                        color: ThemeColors.getPrimaryColor(context),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          SizedBox(height: isSmallScreen ? 16 : 20),
 
           // Error messages
           if (_serverMessage != null) ...[
