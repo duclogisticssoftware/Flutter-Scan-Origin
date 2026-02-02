@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:qrscan_app/views/Scan/scan_screen.dart';
 import 'package:qrscan_app/views/History/history_screen.dart';
 import 'package:qrscan_app/views/Settings/settings_screen.dart';
+import 'package:qrscan_app/views/Report/report_screen.dart';
 
 class WelcomeScreen extends StatelessWidget {
   const WelcomeScreen({super.key});
@@ -78,7 +79,7 @@ class WelcomeScreen extends StatelessWidget {
                       ),
                       SizedBox(height: isSmallScreen ? 2 : 4),
                       Text(
-                        'QR Scan Vinalink',
+                        'QR Scan App',
                         style: TextStyle(
                           fontSize: isSmallScreen ? 22 : 28,
                           fontWeight: FontWeight.bold,
@@ -131,6 +132,16 @@ class WelcomeScreen extends StatelessWidget {
                       color: const Color(0xFF2196F3),
                       onTap: () =>
                           _navigateToScreen(context, const HistoryScreen()),
+                      isSmallScreen: isSmallScreen,
+                    ),
+                    _buildQuickActionCard(
+                      context: context,
+                      icon: Icons.report,
+                      title: 'Reports',
+                      subtitle: 'View Report',
+                      color: const Color(0xFF2196F3),
+                      onTap: () =>
+                          _navigateToScreen(context, const ReportScreen()),
                       isSmallScreen: isSmallScreen,
                     ),
                     _buildQuickActionCard(
@@ -194,7 +205,7 @@ class WelcomeScreen extends StatelessWidget {
                       ),
                       SizedBox(height: isSmallScreen ? 8 : 12),
                       Text(
-                        'Version 1.0.0 • © 2024 QR Scan Vinalink',
+                        'Version 1.0.0 • © 2024 QR Scan App',
                         style: TextStyle(
                           fontSize: isSmallScreen ? 12 : 14,
                           color: Colors.grey[600],

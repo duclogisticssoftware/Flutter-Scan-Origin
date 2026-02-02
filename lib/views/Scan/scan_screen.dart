@@ -103,6 +103,8 @@ class _ScanScreenState extends State<ScanScreen> {
         headers: {
           'Authorization': 'Bearer $token',
           'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          'User-Agent': 'QRScan-Vinalink-Web/1.0',
         },
         body: jsonEncode(requestBody),
       );
@@ -208,7 +210,7 @@ class _ScanScreenState extends State<ScanScreen> {
     _controller?.stop();
 
     showDialog(
-      context: context,
+      context: context, 
       builder: (context) => AlertDialog(
         title: const Text('Error'),
         content: Text(message),
@@ -292,6 +294,8 @@ class _ScanScreenState extends State<ScanScreen> {
         headers: {
           'Authorization': 'Bearer $token',
           'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          'User-Agent': 'QRScan-Vinalink-Web/1.0',
         },
         body: jsonEncode(requestBody), // Send JSON object
       );

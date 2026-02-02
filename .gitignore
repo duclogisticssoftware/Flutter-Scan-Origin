@@ -362,3 +362,12 @@ MigrationBackup/
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
 /build
+
+# Flutter/Dart
+.dart_tool/
+.packages
+pubspec.lock
+build/
+*.iml
+.flutter-plugins
+.flutter-plugins-dependencies

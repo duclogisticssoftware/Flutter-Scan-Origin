@@ -176,7 +176,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
       final resp = await http
           .post(
             url,
-            headers: {'Content-Type': 'application/json'},
+            headers: {
+              'Content-Type': 'application/json',
+              'Accept': 'application/json',
+              'User-Agent': 'QRScan-Vinalink-Web/1.0',
+            },
             body: jsonEncode(payload),
           )
           .timeout(const Duration(seconds: 15));
@@ -263,7 +267,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
               ),
             ),
           ),
-          SizedBox(height: isSmallScreen ? 16 : 20),
+          SizedBox(height: isSmallScreen ? 12 : 16),
 
           // Full Name field
           Text('Full Name', style: ThemeColors.getLabelStyle(context)),
@@ -300,7 +304,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
               ),
             ),
           ),
-          SizedBox(height: isSmallScreen ? 16 : 20),
+          SizedBox(height: isSmallScreen ? 12 : 16),
 
           // Password field
           Text('Password', style: ThemeColors.getLabelStyle(context)),
@@ -350,7 +354,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   : ThemeColors.getHintColor(context),
             ),
           ),
-          SizedBox(height: isSmallScreen ? 16 : 20),
+          SizedBox(height: isSmallScreen ? 12 : 16),
 
           // Confirm password field
           Text('Confirm Password', style: ThemeColors.getLabelStyle(context)),
@@ -395,7 +399,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 : '',
             style: ThemeColors.getErrorStyle(context).copyWith(fontSize: 12),
           ),
-          SizedBox(height: isSmallScreen ? 16 : 20),
+          SizedBox(height: isSmallScreen ? 12 : 16),
 
           // LMS Database Section
           Container(
@@ -421,7 +425,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     context,
                   ).copyWith(fontSize: 12),
                 ),
-                SizedBox(height: isSmallScreen ? 16 : 20),
+                SizedBox(height: isSmallScreen ? 12 : 16),
 
                 // LMS Server field
                 Text('LMS Server', style: ThemeColors.getLabelStyle(context)),
@@ -458,7 +462,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     ),
                   ),
                 ),
-                SizedBox(height: isSmallScreen ? 16 : 20),
+                SizedBox(height: isSmallScreen ? 12 : 16),
 
                 // LMS Database field
                 Text('LMS Database', style: ThemeColors.getLabelStyle(context)),
@@ -495,7 +499,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     ),
                   ),
                 ),
-                SizedBox(height: isSmallScreen ? 16 : 20),
+                SizedBox(height: isSmallScreen ? 12 : 16),
 
                 // LMS Username field
                 Text('LMS Username', style: ThemeColors.getLabelStyle(context)),
@@ -532,7 +536,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     ),
                   ),
                 ),
-                SizedBox(height: isSmallScreen ? 16 : 20),
+                SizedBox(height: isSmallScreen ? 12 : 16),
 
                 // LMS Password field
                 Text('LMS Password', style: ThemeColors.getLabelStyle(context)),
@@ -573,7 +577,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
               ],
             ),
           ),
-          SizedBox(height: isSmallScreen ? 16 : 20),
+          SizedBox(height: isSmallScreen ? 12 : 16),
 
           // Error messages
           if (_serverMessage != null) ...[
@@ -608,24 +612,52 @@ class _RegisterScreenState extends State<RegisterScreen> {
             ),
           ],
 
-          SizedBox(height: isSmallScreen ? 24 : 32),
+          SizedBox(height: isSmallScreen ? 20 : 24),
 
           // Sign Up button
-          ElevatedButton(
-            onPressed: _canSubmit ? _register : null,
-            child: _loading
-                ? const SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+          SizedBox(
+            width: double.infinity,
+            height: isSmallScreen ? 48 : 56,
+            child: ElevatedButton(
+              onPressed: _canSubmit ? _register : null,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: _canSubmit
+                    ? ThemeColors.getPrimaryColor(context)
+                    : ThemeColors.getDisabledColor(context),
+                foregroundColor: Colors.white,
+                elevation: _canSubmit ? 2 : 0,
+                shadowColor: _canSubmit
+                    ? ThemeColors.getPrimaryColor(context).withOpacity(0.3)
+                    : Colors.transparent,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                padding: EdgeInsets.symmetric(
+                  horizontal: 24,
+                  vertical: isSmallScreen ? 12 : 16,
+                ),
+              ),
+              child: _loading
+                  ? SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                      ),
+                    )
+                  : Text(
+                      'SIGN UP',
+                      style: TextStyle(
+                        fontSize: isSmallScreen ? 14 : 16,
+                        fontWeight: FontWeight.w600,
+                        letterSpacing: 0.5,
+                      ),
                     ),
-                  )
-                : Text('SIGN UP', style: ThemeColors.getTextStyle(context)),
+            ),
           ),
 
-          SizedBox(height: isSmallScreen ? 20 : 24),
+          SizedBox(height: isSmallScreen ? 16 : 20),
 
           // Sign In link
           Row(

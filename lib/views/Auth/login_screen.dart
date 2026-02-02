@@ -80,7 +80,11 @@ class _LoginScreenState extends State<LoginScreen> {
       final resp = await http
           .post(
             url,
-            headers: {'Content-Type': 'application/json'},
+            headers: {
+              'Content-Type': 'application/json',
+              'Accept': 'application/json',
+              'User-Agent': 'QRScan-Vinalink-Web/1.0',
+            },
             body: jsonEncode(payload),
           )
           .timeout(const Duration(seconds: 15));

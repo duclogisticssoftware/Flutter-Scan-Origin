@@ -45,6 +45,8 @@ class AuthService {
             headers: {
               'Authorization': 'Bearer $token',
               'Content-Type': 'application/json',
+              'Accept': 'application/json',
+              'User-Agent': 'QRScan-Vinalink-Web/1.0',
             },
           )
           .timeout(const Duration(seconds: 10));
@@ -81,7 +83,13 @@ class AuthService {
   static Future<bool> hasNetworkConnection() async {
     try {
       final response = await http
-          .get(Uri.parse('$apiBase/api/health'))
+          .get(
+            Uri.parse('$apiBase/api/health'),
+            headers: {
+              'Accept': 'application/json',
+              'User-Agent': 'QRScan-Vinalink-Web/1.0',
+            },
+          )
           .timeout(const Duration(seconds: 5));
       return response.statusCode == 200;
     } catch (e) {

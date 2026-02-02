@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>API Test - QR Scan Vinalink</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        .test-section {
+            margin-bottom: 30px;
+        }
+        .test-section h3 {
+            color: #0175C2;
+            border-bottom: 2px solid #0175C2;
+            padding-bottom: 5px;
+        }
+        button {
+            background-color: #0175C2;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background-color: #015a9e;
+        }
+        button:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+        .result {
+            background-color: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            padding: 10px;
+            margin-top: 10px;
+            white-space: pre-wrap;
+            font-family: monospace;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        .success {
+            border-color: #28a745;
+            background-color: #d4edda;
+        }
+        .error {
+            border-color: #dc3545;
+            background-color: #f8d7da;
+        }
+        input, textarea {
+            width: 100%;
+            padding: 8px;
+            margin: 5px 0;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔧 API Test Tool - QR Scan Vinalink</h1>
+        <p>Tool này giúp test các API endpoints từ web browser để kiểm tra CORS và connectivity.</p>
+    </div>
+
+    <!-- Health Check Test -->
+    <div class="container test-section">
+        <h3>1. Health Check Test</h3>
+        <p>Test kết nối cơ bản đến API server</p>
+        <button onclick="testHealthCheck()">Test Health Check</button>
+        <div id="healthResult" class="result" style="display: none;"></div>
+    </div>
+
+    <!-- CORS Test -->
+    <div class="container test-section">
+        <h3>2. CORS Test</h3>
+        <p>Test CORS headers và preflight requests</p>
+        <button onclick="testCORS()">Test CORS</button>
+        <div id="corsResult" class="result" style="display: none;"></div>
+    </div>
+
+    <!-- Login Test -->
+    <div class="container test-section">
+        <h3>3. Login API Test</h3>
+        <div class="form-group">
+            <label for="email">Email:</label>
+            <input type="email" id="email" placeholder="test@example.com" value="test@example.com">
+        </div>
+        <div class="form-group">
+            <label for="password">Password:</label>
+            <input type="password" id="password" placeholder="password" value="password123">
+        </div>
+        <button onclick="testLogin()">Test Login</button>
+        <div id="loginResult" class="result" style="display: none;"></div>
+    </div>
+
+    <!-- Register Test -->
+    <div class="container test-section">
+        <h3>4. Register API Test</h3>
+        <div class="form-group">
+            <label for="regEmail">Email:</label>
+            <input type="email" id="regEmail" placeholder="newuser@example.com" value="newuser@example.com">
+        </div>
+        <div class="form-group">
+            <label for="regPassword">Password:</label>
+            <input type="password" id="regPassword" placeholder="password" value="password123">
+        </div>
+        <div class="form-group">
+            <label for="fullName">Full Name:</label>
+            <input type="text" id="fullName" placeholder="Full Name" value="Test User">
+        </div>
+        <div class="form-group">
+            <label for="lmsServer">LMS Server:</label>
+            <input type="text" id="lmsServer" placeholder="LMS Server" value="test-server">
+        </div>
+        <div class="form-group">
+            <label for="lmsDatabase">LMS Database:</label>
+            <input type="text" id="lmsDatabase" placeholder="LMS Database" value="test-db">
+        </div>
+        <div class="form-group">
+            <label for="lmsUsername">LMS Username:</label>
+            <input type="text" id="lmsUsername" placeholder="LMS Username" value="test-user">
+        </div>
+        <div class="form-group">
+            <label for="lmsPassword">LMS Password:</label>
+            <input type="password" id="lmsPassword" placeholder="LMS Password" value="test-pass">
+        </div>
+        <button onclick="testRegister()">Test Register</button>
+        <div id="registerResult" class="result" style="display: none;"></div>
+    </div>
+
+    <!-- Token Validation Test -->
+    <div class="container test-section">
+        <h3>5. Token Validation Test</h3>
+        <div class="form-group">
+            <label for="token">JWT Token:</label>
+            <textarea id="token" rows="3" placeholder="Paste JWT token here"></textarea>
+        </div>
+        <button onclick="testTokenValidation()">Test Token Validation</button>
+        <div id="tokenResult" class="result" style="display: none;"></div>
+    </div>
+
+    <script>
+        const API_BASE = 'https://qr.logisticssoftware.vn';
+        
+        function showResult(elementId, content, isSuccess = true) {
+            const element = document.getElementById(elementId);
+            element.style.display = 'block';
+            element.textContent = content;
+            element.className = `result ${isSuccess ? 'success' : 'error'}`;
+        }
+
+        async function testHealthCheck() {
+            try {
+                const response = await fetch(`${API_BASE}/api/health`, {
+                    method: 'GET',
+                    headers: {
+                        'Accept': 'application/json',
+                        'User-Agent': 'QRScan-Vinalink-Web/1.0'
+                    }
+                });
+                
+                const result = `Status: ${response.status}\nHeaders: ${JSON.stringify([...response.headers.entries()], null, 2)}\nBody: ${await response.text()}`;
+                showResult('healthResult', result, response.ok);
+            } catch (error) {
+                showResult('healthResult', `Error: ${error.message}`, false);
+            }
+        }
+
+        async function testCORS() {
+            try {
+                // Test preflight request
+                const response = await fetch(`${API_BASE}/api/health`, {
+                    method: 'OPTIONS',
+                    headers: {
+                        'Access-Control-Request-Method': 'GET',
+                        'Access-Control-Request-Headers': 'Content-Type, Authorization',
+                        'Origin': window.location.origin
+                    }
+                });
+                
+                const result = `Preflight Status: ${response.status}\nCORS Headers: ${JSON.stringify([...response.headers.entries()], null, 2)}`;
+                showResult('corsResult', result, response.ok);
+            } catch (error) {
+                showResult('corsResult', `CORS Error: ${error.message}`, false);
+            }
+        }
+
+        async function testLogin() {
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            
+            try {
+                const response = await fetch(`${API_BASE}/api/auth/login`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                        'User-Agent': 'QRScan-Vinalink-Web/1.0'
+                    },
+                    body: JSON.stringify({
+                        Email: email,
+                        PasswordHash: password
+                    })
+                });
+                
+                const body = await response.text();
+                const result = `Status: ${response.status}\nHeaders: ${JSON.stringify([...response.headers.entries()], null, 2)}\nBody: ${body}`;
+                showResult('loginResult', result, response.ok);
+                
+                // If login successful, extract token
+                if (response.ok) {
+                    try {
+                        const data = JSON.parse(body);
+                        const token = data.token || data.access_token || data.accessToken || data.jwt;
+                        if (token) {
+                            document.getElementById('token').value = token;
+                        }
+                    } catch (e) {
+                        console.log('Could not parse token from response');
+                    }
+                }
+            } catch (error) {
+                showResult('loginResult', `Error: ${error.message}`, false);
+            }
+        }
+
+        async function testRegister() {
+            const email = document.getElementById('regEmail').value;
+            const password = document.getElementById('regPassword').value;
+            const fullName = document.getElementById('fullName').value;
+            const lmsServer = document.getElementById('lmsServer').value;
+            const lmsDatabase = document.getElementById('lmsDatabase').value;
+            const lmsUsername = document.getElementById('lmsUsername').value;
+            const lmsPassword = document.getElementById('lmsPassword').value;
+            
+            try {
+                const response = await fetch(`${API_BASE}/api/auth/register`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                        'User-Agent': 'QRScan-Vinalink-Web/1.0'
+                    },
+                    body: JSON.stringify({
+                        Email: email,
+                        PasswordHash: password,
+                        FullName: fullName,
+                        LMSServer: lmsServer,
+                        LMSDatabase: lmsDatabase,
+                        LMSUsername: lmsUsername,
+                        LMSPassword: lmsPassword
+                    })
+                });
+                
+                const body = await response.text();
+                const result = `Status: ${response.status}\nHeaders: ${JSON.stringify([...response.headers.entries()], null, 2)}\nBody: ${body}`;
+                showResult('registerResult', result, response.ok);
+            } catch (error) {
+                showResult('registerResult', `Error: ${error.message}`, false);
+            }
+        }
+
+        async function testTokenValidation() {
+            const token = document.getElementById('token').value;
+            
+            if (!token) {
+                showResult('tokenResult', 'Please enter a JWT token first', false);
+                return;
+            }
+            
+            try {
+                const response = await fetch(`${API_BASE}/api/auth/validate-token`, {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Accept': 'application/json',
+                        'User-Agent': 'QRScan-Vinalink-Web/1.0'
+                    }
+                });
+                
+                const body = await response.text();
+                const result = `Status: ${response.status}\nHeaders: ${JSON.stringify([...response.headers.entries()], null, 2)}\nBody: ${body}`;
+                showResult('tokenResult', result, response.ok);
+            } catch (error) {
+                showResult('tokenResult', `Error: ${error.message}`, false);
+            }
+        }
+
+        // Auto-test health check on page load
+        window.onload = function() {
+            testHealthCheck();
+        };
+    </script>
+</body>
+</html>

@@ -131,6 +131,8 @@ class LocationTrackingService {
         headers: {
           'Authorization': 'Bearer $token',
           'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          'User-Agent': 'QRScan-Vinalink-Web/1.0',
         },
         body: jsonEncode(requestBody),
       );
@@ -212,6 +214,8 @@ class LocationTrackingService {
         headers: {
           'Authorization': 'Bearer $token',
           'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          'User-Agent': 'QRScan-Vinalink-Web/1.0',
         },
         body: jsonEncode(requestBody),
       );

@@ -53,6 +53,10 @@ class ThemeColors {
     return Theme.of(context).colorScheme.primary;
   }
 
+  static Color getDisabledColor(BuildContext context) {
+    return Theme.of(context).colorScheme.onSurface.withOpacity(0.12);
+  }
+
   // Text styles with theme colors
   static TextStyle getTitleStyle(BuildContext context) {
     return TextStyle(

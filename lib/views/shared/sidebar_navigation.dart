@@ -5,6 +5,7 @@ import 'package:qrscan_app/views/History/history_screen.dart';
 import 'package:qrscan_app/views/Settings/settings_screen.dart';
 import 'package:qrscan_app/views/shared/tracking_status_widget.dart';
 import 'package:qrscan_app/utils/theme_colors.dart';
+import 'package:qrscan_app/views/Report/report_screen.dart';
 
 class SidebarNavigation extends StatefulWidget {
   const SidebarNavigation({super.key});
@@ -32,6 +33,11 @@ class _SidebarNavigationState extends State<SidebarNavigation> {
       icon: Icons.history,
       title: 'History',
       screen: const HistoryScreen(),
+    ),
+    NavigationItem(
+      icon: Icons.assessment,
+      title: 'Report',
+      screen: const ReportScreen(),
     ),
     NavigationItem(
       icon: Icons.settings,
@@ -270,7 +276,7 @@ class _SidebarNavigationState extends State<SidebarNavigation> {
                       ),
                       const SizedBox(height: 12),
                       const Text(
-                        'QR Scan Vinalink',
+                        'QR Scan App',
                         style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
