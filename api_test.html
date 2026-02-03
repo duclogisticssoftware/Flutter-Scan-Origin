@@ -1,9 +1,10 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>API Test - QR Scan Vinalink</title>
+    <title>API Test - LMS General Report</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -12,21 +13,25 @@
             padding: 20px;
             background-color: #f5f5f5;
         }
+
         .container {
             background: white;
             padding: 20px;
             border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
             margin-bottom: 20px;
         }
+
         .test-section {
             margin-bottom: 30px;
         }
+
         .test-section h3 {
             color: #0175C2;
             border-bottom: 2px solid #0175C2;
             padding-bottom: 5px;
         }
+
         button {
             background-color: #0175C2;
             color: white;
@@ -36,13 +41,16 @@
             cursor: pointer;
             margin: 5px;
         }
+
         button:hover {
             background-color: #015a9e;
         }
+
         button:disabled {
             background-color: #ccc;
             cursor: not-allowed;
         }
+
         .result {
             background-color: #f8f9fa;
             border: 1px solid #dee2e6;
@@ -54,15 +62,19 @@
             max-height: 300px;
             overflow-y: auto;
         }
+
         .success {
             border-color: #28a745;
             background-color: #d4edda;
         }
+
         .error {
             border-color: #dc3545;
             background-color: #f8d7da;
         }
-        input, textarea {
+
+        input,
+        textarea {
             width: 100%;
             padding: 8px;
             margin: 5px 0;
@@ -70,9 +82,11 @@
             border-radius: 4px;
             box-sizing: border-box;
         }
+
         .form-group {
             margin-bottom: 15px;
         }
+
         label {
             display: block;
             margin-bottom: 5px;
@@ -80,9 +94,10 @@
         }
     </style>
 </head>
+
 <body>
     <div class="container">
-        <h1>🔧 API Test Tool - QR Scan Vinalink</h1>
+        <h1>🔧 API Test Tool - LMS General Report</h1>
         <p>Tool này giúp test các API endpoints từ web browser để kiểm tra CORS và connectivity.</p>
     </div>
 
@@ -165,7 +180,7 @@
 
     <script>
         const API_BASE = 'https://qr.logisticssoftware.vn';
-        
+
         function showResult(elementId, content, isSuccess = true) {
             const element = document.getElementById(elementId);
             element.style.display = 'block';
@@ -182,7 +197,7 @@
                         'User-Agent': 'QRScan-Vinalink-Web/1.0'
                     }
                 });
-                
+
                 const result = `Status: ${response.status}\nHeaders: ${JSON.stringify([...response.headers.entries()], null, 2)}\nBody: ${await response.text()}`;
                 showResult('healthResult', result, response.ok);
             } catch (error) {
@@ -201,7 +216,7 @@
                         'Origin': window.location.origin
                     }
                 });
-                
+
                 const result = `Preflight Status: ${response.status}\nCORS Headers: ${JSON.stringify([...response.headers.entries()], null, 2)}`;
                 showResult('corsResult', result, response.ok);
             } catch (error) {
@@ -212,7 +227,7 @@
         async function testLogin() {
             const email = document.getElementById('email').value;
             const password = document.getElementById('password').value;
-            
+
             try {
                 const response = await fetch(`${API_BASE}/api/auth/login`, {
                     method: 'POST',
@@ -226,11 +241,11 @@
                         PasswordHash: password
                     })
                 });
-                
+
                 const body = await response.text();
                 const result = `Status: ${response.status}\nHeaders: ${JSON.stringify([...response.headers.entries()], null, 2)}\nBody: ${body}`;
                 showResult('loginResult', result, response.ok);
-                
+
                 // If login successful, extract token
                 if (response.ok) {
                     try {
@@ -256,7 +271,7 @@
             const lmsDatabase = document.getElementById('lmsDatabase').value;
             const lmsUsername = document.getElementById('lmsUsername').value;
             const lmsPassword = document.getElementById('lmsPassword').value;
-            
+
             try {
                 const response = await fetch(`${API_BASE}/api/auth/register`, {
                     method: 'POST',
@@ -275,7 +290,7 @@
                         LMSPassword: lmsPassword
                     })
                 });
-                
+
                 const body = await response.text();
                 const result = `Status: ${response.status}\nHeaders: ${JSON.stringify([...response.headers.entries()], null, 2)}\nBody: ${body}`;
                 showResult('registerResult', result, response.ok);
@@ -286,12 +301,12 @@
 
         async function testTokenValidation() {
             const token = document.getElementById('token').value;
-            
+
             if (!token) {
                 showResult('tokenResult', 'Please enter a JWT token first', false);
                 return;
             }
-            
+
             try {
                 const response = await fetch(`${API_BASE}/api/auth/validate-token`, {
                     method: 'GET',
@@ -301,7 +316,7 @@
                         'User-Agent': 'QRScan-Vinalink-Web/1.0'
                     }
                 });
-                
+
                 const body = await response.text();
                 const result = `Status: ${response.status}\nHeaders: ${JSON.stringify([...response.headers.entries()], null, 2)}\nBody: ${body}`;
                 showResult('tokenResult', result, response.ok);
@@ -311,9 +326,10 @@
         }
 
         // Auto-test health check on page load
-        window.onload = function() {
+        window.onload = function () {
             testHealthCheck();
         };
     </script>
 </body>
+
 </html>

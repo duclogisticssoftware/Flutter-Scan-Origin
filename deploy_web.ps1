@@ -1,8 +1,8 @@
-# QR Scan App - Web Deployment Script (PowerShell)
+# LMS General Report - Web Deployment Script (PowerShell)
 # This script helps deploy your Flutter QR Scan app to various web platforms
 
 Write-Host "========================================" -ForegroundColor Cyan
-Write-Host "   QR Scan App - Web Deployment Script" -ForegroundColor Cyan
+Write-Host "   LMS General Report - Web Deployment Script" -ForegroundColor Cyan
 Write-Host "========================================" -ForegroundColor Cyan
 Write-Host ""
 
@@ -275,7 +275,7 @@ do {
         "6" { Test-Local }
         "7" { 
             Write-Host ""
-            Write-Host "Thank you for using QR Scan App deployment script!" -ForegroundColor Green
+            Write-Host "Thank you for using LMS General Report deployment script!" -ForegroundColor Green
             Write-Host ""
             break
         }

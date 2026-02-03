@@ -1,4 +1,4 @@
-# 🎯 Hướng dẫn thiết lập icon cho QR Scan App
+# 🎯 Hướng dẫn thiết lập icon cho LMS General Report
 
 ## 📋 Vấn đề hiện tại:
 - App chưa có icon hiển thị trên điện thoại

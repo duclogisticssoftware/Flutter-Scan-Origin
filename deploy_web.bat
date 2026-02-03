@@ -1,6 +1,6 @@
 @echo off
 echo ========================================
-echo    QR Scan App - Web Deployment Script
+echo    LMS General Report - Web Deployment Script
 echo ========================================
 echo.
 
@@ -248,7 +248,7 @@ goto menu
 
 :exit
 echo.
-echo Thank you for using QR Scan App deployment script!
+echo Thank you for using LMS General Report deployment script!
 echo.
 pause
 exit

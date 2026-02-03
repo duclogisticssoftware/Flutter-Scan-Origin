@@ -1,6 +1,6 @@
 @echo off
 echo ========================================
-echo    QR Scan App - Web Build & Deploy
+echo    LMS General Report - Web Build & Deploy
 echo ========================================
 echo.
 

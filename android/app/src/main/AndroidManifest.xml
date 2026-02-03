@@ -5,7 +5,7 @@
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <application
-        android:label="QR Scan Vinalink"
+        android:label="LMS General Report"
         android:name="${applicationName}"   
         android:allowBackup="false"
         android:icon="@mipmap/ic_launcher">

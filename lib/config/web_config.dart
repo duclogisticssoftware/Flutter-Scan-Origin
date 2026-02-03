@@ -1,4 +1,4 @@
-// Web-specific configuration for QR Scan App
+// Web-specific configuration for LMS General Report
 // This file handles web-specific settings and CORS issues
 
 import 'package:flutter/foundation.dart';

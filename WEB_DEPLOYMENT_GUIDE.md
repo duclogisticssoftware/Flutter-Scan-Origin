@@ -1,4 +1,4 @@
-# Hướng dẫn Publish Flutter QR Scan App lên Web
+# Hướng dẫn Publish Flutter LMS General Report lên Web
 
 ## Tổng quan
 Ứng dụng QR Scan của bạn đã được build thành công cho web và sẵn sàng để deploy. Thư mục `build/web` chứa tất cả các file cần thiết để chạy trên web.
@@ -111,8 +111,8 @@ surge
 File `manifest.json` đã được cấu hình:
 ```json
 {
-    "name": "QR Scan Vinalink",
-    "short_name": "QR Scan Vinalink",
+    "name": "LMS General Report",
+    "short_name": "LMS General Report",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",

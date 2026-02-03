@@ -79,7 +79,7 @@ class WelcomeScreen extends StatelessWidget {
                       ),
                       SizedBox(height: isSmallScreen ? 2 : 4),
                       Text(
-                        'QR Scan App',
+                        'LMS General Report',
                         style: TextStyle(
                           fontSize: isSmallScreen ? 22 : 28,
                           fontWeight: FontWeight.bold,
@@ -205,7 +205,7 @@ class WelcomeScreen extends StatelessWidget {
                       ),
                       SizedBox(height: isSmallScreen ? 8 : 12),
                       Text(
-                        'Version 1.0.0 • © 2024 QR Scan App',
+                        'Version 1.0.0 • © 2024 LMS General Report',
                         style: TextStyle(
                           fontSize: isSmallScreen ? 12 : 14,
                           color: Colors.grey[600],

@@ -118,7 +118,7 @@ class _SidebarNavigationState extends State<SidebarNavigation> {
                       ),
                       const SizedBox(height: 16),
                       const Text(
-                        'QR Scan Vinalink',
+                        'LMS General Report',
                         style: TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
@@ -204,7 +204,7 @@ class _SidebarNavigationState extends State<SidebarNavigation> {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        '© 2024 Vinalink',
+                        '© 2026 LMS General Report',
                         style: TextStyle(color: Colors.white70, fontSize: 10),
                       ),
                     ],
@@ -276,7 +276,7 @@ class _SidebarNavigationState extends State<SidebarNavigation> {
                       ),
                       const SizedBox(height: 12),
                       const Text(
-                        'QR Scan App',
+                        'LMS General Report',
                         style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
@@ -362,7 +362,7 @@ class _SidebarNavigationState extends State<SidebarNavigation> {
                       ),
                       const SizedBox(height: 2),
                       Text(
-                        '© 2024 Vinalink',
+                        '© 2026 LMS General Report',
                         style: TextStyle(color: Colors.white70, fontSize: 9),
                       ),
                     ],
@@ -392,7 +392,7 @@ class _SidebarNavigationState extends State<SidebarNavigation> {
     return Scaffold(
       key: _scaffoldKey,
       appBar: AppBar(
-        title: const Text('QR Scan Vinalink'),
+        title: const Text('LMS General Report'),
         backgroundColor: ThemeColors.getPrimaryColor(context),
         foregroundColor: Colors.white,
         leading: IconButton(
@@ -461,7 +461,7 @@ class _SidebarNavigationState extends State<SidebarNavigation> {
                     ),
                     SizedBox(height: isSmallScreen ? 8 : 12),
                     Text(
-                      'QR Scan Vinalink',
+                      'LMS General Report',
                       style: TextStyle(
                         fontSize: isSmallScreen ? 16 : 20,
                         fontWeight: FontWeight.bold,
@@ -559,7 +559,7 @@ class _SidebarNavigationState extends State<SidebarNavigation> {
                 ),
                 SizedBox(height: isSmallScreen ? 2 : 4),
                 Text(
-                  '© 2024 Vinalink',
+                  '© 2026 LMS General Report',
                   style: TextStyle(
                     color: Colors.white70,
                     fontSize: isSmallScreen ? 9 : 10,

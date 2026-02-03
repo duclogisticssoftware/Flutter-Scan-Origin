@@ -1,4 +1,4 @@
-# 🚀 QR Scan App - Web Deployment
+# 🚀 LMS General Report - Web Deployment
 
 ## Quick Deploy
 

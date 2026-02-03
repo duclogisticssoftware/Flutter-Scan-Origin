@@ -1,11 +1,11 @@
 {
-    "name": "QR Scan Vinalink",
-    "short_name": "QR Scan Vinalink",
+    "name": "LMS General Report",
+    "short_name": "LMS General Report",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",
     "theme_color": "#0175C2",
-    "description": "QR Scan Vinalink - Professional QR Code Scanner",
+    "description": "LMS General Report - Professional QR Code Scanner",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [
