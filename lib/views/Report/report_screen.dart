@@ -22,6 +22,13 @@ class _ReportScreenState extends State<ReportScreen> {
   final TextEditingController _mblController = TextEditingController();
   final TextEditingController _hblController = TextEditingController();
 
+  String _filterPolOrPod = 'POL';
+  String? _selectedPOL;
+  String? _selectedPOD;
+  List<Map<String, dynamic>> _portList = [];
+  bool _loadingPort = true;
+  String? _portError;
+
   bool _loadingReport = false;
   String? _reportError;
   Map<String, dynamic>? _reportResult;
@@ -30,6 +37,7 @@ class _ReportScreenState extends State<ReportScreen> {
   void initState() {
     super.initState();
     _loadDistinctLoai();
+    _loadPorts();
     final now = DateTime.now();
     _fromDate = DateTime(now.year, now.month, 1);
     _toDate = now;
@@ -40,6 +48,64 @@ class _ReportScreenState extends State<ReportScreen> {
     _mblController.dispose();
     _hblController.dispose();
     super.dispose();
+  }
+
+  static String _portDisplayName(Map<String, dynamic> port) {
+    final value = port['port'] ?? port['PORT'];
+    if (value != null && value.toString().trim().isNotEmpty) {
+      return value.toString().trim();
+    }
+    return '';
+  }
+
+  Future<void> _loadPorts() async {
+    setState(() {
+      _loadingPort = true;
+      _portError = null;
+    });
+
+    try {
+      final response = await HttpService.get(
+        '$apiBase/api/JobProfitReport/port',
+      );
+
+      if (!mounted) return;
+
+      if (HttpService.isSuccess(response)) {
+        final body = jsonDecode(response.body) as Map<String, dynamic>;
+        final data = body['data'];
+        if (data is List) {
+          final list = data
+              .map(
+                (e) => e is Map<String, dynamic>
+                    ? e
+                    : <String, dynamic>{'display': e.toString()},
+              )
+              .toList();
+          setState(() {
+            _portList = list;
+            _loadingPort = false;
+          });
+        } else {
+          setState(() {
+            _portList = [];
+            _loadingPort = false;
+          });
+        }
+      } else {
+        setState(() {
+          _portError = HttpService.getErrorMessage(response);
+          _loadingPort = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _portError = 'Lỗi: $e';
+          _loadingPort = false;
+        });
+      }
+    }
   }
 
   Future<void> _loadDistinctLoai() async {
@@ -133,6 +199,12 @@ class _ReportScreenState extends State<ReportScreen> {
       final hbl = _hblController.text.trim();
       if (mbl.isNotEmpty) queryParams['mbl'] = mbl;
       if (hbl.isNotEmpty) queryParams['hbl'] = hbl;
+      if (_selectedPOL != null && _selectedPOL!.trim().isNotEmpty) {
+        queryParams['polname'] = _selectedPOL!.trim();
+      }
+      if (_selectedPOD != null && _selectedPOD!.trim().isNotEmpty) {
+        queryParams['podname'] = _selectedPOD!.trim();
+      }
 
       final uri = Uri.parse(
         '$apiBase/api/JobProfitReport',
@@ -314,6 +386,95 @@ class _ReportScreenState extends State<ReportScreen> {
                           ),
                         ),
                       ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  // POL / POD: radio + 2 combobox
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Radio<String>(
+                            value: 'POL',
+                            groupValue: _filterPolOrPod,
+                            onChanged: (v) =>
+                                setState(() => _filterPolOrPod = v!),
+                            materialTapTargetSize:
+                                MaterialTapTargetSize.shrinkWrap,
+                          ),
+                          const Text('POL'),
+                          const SizedBox(width: 8),
+                          Radio<String>(
+                            value: 'POD',
+                            groupValue: _filterPolOrPod,
+                            onChanged: (v) =>
+                                setState(() => _filterPolOrPod = v!),
+                            materialTapTargetSize:
+                                MaterialTapTargetSize.shrinkWrap,
+                          ),
+                          const Text('POD'),
+                        ],
+                      ),
+                      const SizedBox(width: 16),
+                      if (_loadingPort)
+                        const SizedBox(
+                          width: 24,
+                          height: 24,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      else if (_portError != null)
+                        Expanded(
+                          child: Row(
+                            children: [
+                              Icon(
+                                Icons.error_outline,
+                                size: 20,
+                                color: Colors.red[700],
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  _portError!,
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: Colors.red[700],
+                                  ),
+                                ),
+                              ),
+                              TextButton(
+                                onPressed: _loadPorts,
+                                child: const Text('Thử lại'),
+                              ),
+                            ],
+                          ),
+                        )
+                      else ...[
+                        Expanded(
+                          child: _PortAutocomplete(
+                            label: 'POL',
+                            placeholder: 'Nhập tìm POL...',
+                            portList: _portList,
+                            value: _selectedPOL,
+                            enabled: _filterPolOrPod == 'POL',
+                            onSelected: (v) => setState(() => _selectedPOL = v),
+                            portDisplayName: _portDisplayName,
+                          ),
+                        ),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: _PortAutocomplete(
+                            label: 'POD',
+                            placeholder: 'Nhập tìm POD...',
+                            portList: _portList,
+                            value: _selectedPOD,
+                            enabled: _filterPolOrPod == 'POD',
+                            onSelected: (v) => setState(() => _selectedPOD = v),
+                            portDisplayName: _portDisplayName,
+                          ),
+                        ),
+                      ],
                     ],
                   ),
                   const SizedBox(height: 16),
@@ -593,5 +754,92 @@ class _ReportScreenState extends State<ReportScreen> {
       }
     }
     return '';
+  }
+}
+
+class _PortAutocomplete extends StatelessWidget {
+  const _PortAutocomplete({
+    required this.label,
+    required this.placeholder,
+    required this.portList,
+    required this.value,
+    required this.enabled,
+    required this.onSelected,
+    required this.portDisplayName,
+  });
+
+  final String label;
+  final String placeholder;
+  final List<Map<String, dynamic>> portList;
+  final String? value;
+  final bool enabled;
+  final void Function(String?) onSelected;
+  final String Function(Map<String, dynamic>) portDisplayName;
+
+  @override
+  Widget build(BuildContext context) {
+    final options = portList
+        .map(portDisplayName)
+        .where((s) => s.isNotEmpty)
+        .toSet()
+        .toList();
+
+    return Autocomplete<String>(
+      key: ValueKey('$label-${value ?? ""}'),
+      initialValue: value != null && value!.isNotEmpty
+          ? TextEditingValue(text: value!)
+          : null,
+      optionsBuilder: (TextEditingValue textEditingValue) {
+        final query = textEditingValue.text.trim().toLowerCase();
+        if (query.isEmpty) return options;
+        return options.where((s) => s.toLowerCase().contains(query));
+      },
+      onSelected: onSelected,
+      fieldViewBuilder: (context, controller, focusNode, onFieldSubmitted) {
+        return TextFormField(
+          controller: controller,
+          focusNode: focusNode,
+          enabled: enabled,
+          decoration: InputDecoration(
+            labelText: label,
+            hintText: placeholder,
+            border: const OutlineInputBorder(),
+            isDense: true,
+          ),
+          onChanged: (v) {
+            if (v.isEmpty) onSelected(null);
+          },
+        );
+      },
+      optionsViewBuilder: (context, onSelected, options) {
+        return Align(
+          alignment: Alignment.topLeft,
+          child: Material(
+            elevation: 4,
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxHeight: 200),
+              child: ListView.builder(
+                padding: EdgeInsets.zero,
+                shrinkWrap: true,
+                itemCount: options.length,
+                itemBuilder: (context, index) {
+                  final option = options.elementAt(index);
+                  return InkWell(
+                    onTap: () => onSelected(option),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 12,
+                      ),
+                      child: Text(option),
+                    ),
+                  );
+                },
+              ),
+            ),
+          ),
+        );
+      },
+    );
   }
 }

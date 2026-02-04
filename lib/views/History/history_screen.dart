@@ -555,7 +555,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                 value: sliderValue,
                 min: 0.0,
                 max: maxValue,
-                divisions: locations.length - 1,
+                divisions: locations.length > 1 ? locations.length - 1 : null,
                 onChanged: (value) {
                   setState(() {
                     sliderValue = value;
