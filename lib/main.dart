@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/foundation.dart';
 import 'package:qrscan_app/views/shared/sidebar_navigation.dart';
 import 'package:qrscan_app/views/Auth/login_screen.dart';
 import 'package:qrscan_app/services/auth_service.dart';
