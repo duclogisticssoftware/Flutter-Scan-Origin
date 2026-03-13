@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:qrscan_app/views/Scan/scan_screen.dart';
 import 'package:qrscan_app/views/History/history_screen.dart';
+import 'package:qrscan_app/views/Inventory/inventory_screen.dart';
 import 'package:qrscan_app/views/Settings/settings_screen.dart';
 import 'package:qrscan_app/views/Report/report_screen.dart';
 
@@ -142,6 +143,16 @@ class WelcomeScreen extends StatelessWidget {
                       color: const Color(0xFF2196F3),
                       onTap: () =>
                           _navigateToScreen(context, const ReportScreen()),
+                      isSmallScreen: isSmallScreen,
+                    ),
+                    _buildQuickActionCard(
+                      context: context,
+                      icon: Icons.inventory_2,
+                      title: 'Inventory',
+                      subtitle: 'Container Inventory',
+                      color: const Color(0xFF009688),
+                      onTap: () =>
+                          _navigateToScreen(context, const InventoryScreen()),
                       isSmallScreen: isSmallScreen,
                     ),
                     _buildQuickActionCard(

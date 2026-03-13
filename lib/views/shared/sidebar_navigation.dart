@@ -6,6 +6,7 @@ import 'package:qrscan_app/views/Settings/settings_screen.dart';
 import 'package:qrscan_app/views/shared/tracking_status_widget.dart';
 import 'package:qrscan_app/utils/theme_colors.dart';
 import 'package:qrscan_app/views/Report/report_screen.dart';
+import 'package:qrscan_app/views/Inventory/inventory_screen.dart';
 
 class SidebarNavigation extends StatefulWidget {
   const SidebarNavigation({super.key});
@@ -38,6 +39,11 @@ class _SidebarNavigationState extends State<SidebarNavigation> {
       icon: Icons.assessment,
       title: 'Report',
       screen: const ReportScreen(),
+    ),
+    NavigationItem(
+      icon: Icons.inventory,
+      title: 'Inventory',
+      screen: const InventoryScreen(),
     ),
     NavigationItem(
       icon: Icons.settings,
