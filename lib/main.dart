@@ -58,7 +58,7 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
       child: Consumer<ThemeService>(
         builder: (context, themeService, child) {
           return MaterialApp(
-            title: 'QRScan App',
+            title: 'LMS APP',
             theme: ThemeService.getLightTheme(),
             darkTheme: ThemeService.getDarkTheme(),
             themeMode: ThemeService.themeMode,

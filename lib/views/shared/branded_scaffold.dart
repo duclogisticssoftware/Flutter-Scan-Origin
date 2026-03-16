@@ -22,7 +22,7 @@ class BrandedScaffold extends StatelessWidget {
                 children: [
                   logo,
                   const SizedBox(width: 8),
-                  Text(title ?? 'QRScan App'),
+                  Text(title ?? 'LMS APP'),
                 ],
               ),
               centerTitle: true,
