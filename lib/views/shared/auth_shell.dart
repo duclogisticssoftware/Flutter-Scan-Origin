@@ -24,68 +24,63 @@ class AuthShell extends StatelessWidget {
     return Scaffold(
       backgroundColor: ThemeColors.getBackgroundColor(context),
       body: SafeArea(
-        child: SingleChildScrollView(
-          child: ConstrainedBox(
-            constraints: BoxConstraints(
-              minHeight:
-                  screenHeight -
-                  MediaQuery.of(context).padding.top -
-                  MediaQuery.of(context).padding.bottom,
-            ),
-            child: IntrinsicHeight(
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            return SingleChildScrollView(
+              padding: EdgeInsets.symmetric(
+                horizontal: screenWidth > 600 ? 24 : 20,
+                vertical: isVerySmallScreen ? 16 : 24,
+              ),
               child: Center(
                 child: ConstrainedBox(
                   constraints: BoxConstraints(
                     maxWidth: screenWidth > 600 ? 400 : screenWidth * 0.9,
+                    minHeight: constraints.maxHeight,
                   ),
-                  child: Padding(
-                    padding: EdgeInsets.symmetric(
-                      horizontal: screenWidth > 600 ? 24 : 20,
-                      vertical: isVerySmallScreen ? 16 : 24,
-                    ),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        // Logo section
-                        const _LogoWidget(path: brandLogoAsset),
-                        SizedBox(height: isSmallScreen ? 24 : 32),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      // Top spacer to keep content visually centered on tall screens
+                      if (constraints.maxHeight > 700)
+                        SizedBox(height: (constraints.maxHeight - 700) / 2),
 
-                        // Title
-                        Text(
-                          title,
-                          style: TextStyle(
-                            fontSize: isVerySmallScreen ? 24 : 28,
-                            fontWeight: FontWeight.bold,
-                            color: ThemeColors.getSurfaceTextColor(context),
-                          ),
-                          textAlign: TextAlign.center,
+                      const _LogoWidget(path: brandLogoAsset),
+                      SizedBox(height: isSmallScreen ? 24 : 32),
+
+                      Text(
+                        title,
+                        style: TextStyle(
+                          fontSize: isVerySmallScreen ? 24 : 28,
+                          fontWeight: FontWeight.bold,
+                          color: ThemeColors.getSurfaceTextColor(context),
                         ),
-                        SizedBox(height: isSmallScreen ? 6 : 8),
+                        textAlign: TextAlign.center,
+                      ),
+                      SizedBox(height: isSmallScreen ? 6 : 8),
 
-                        // Subtitle
-                        Text(
-                          subtitle,
-                          style: TextStyle(
-                            fontSize: isVerySmallScreen ? 14 : 16,
-                            color: ThemeColors.getSurfaceSecondaryTextColor(
-                              context,
-                            ),
-                            height: 1.4,
+                      Text(
+                        subtitle,
+                        style: TextStyle(
+                          fontSize: isVerySmallScreen ? 14 : 16,
+                          color: ThemeColors.getSurfaceSecondaryTextColor(
+                            context,
                           ),
-                          textAlign: TextAlign.center,
+                          height: 1.4,
                         ),
-                        SizedBox(height: isSmallScreen ? 32 : 40),
+                        textAlign: TextAlign.center,
+                      ),
+                      SizedBox(height: isSmallScreen ? 32 : 40),
 
-                        // Form
-                        form,
-                      ],
-                    ),
+                      form,
+
+                      const SizedBox(height: 24),
+                    ],
                   ),
                 ),
               ),
-            ),
-          ),
+            );
+          },
         ),
       ),
     );

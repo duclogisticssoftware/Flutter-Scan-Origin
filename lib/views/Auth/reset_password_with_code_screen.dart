@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:qrscan_app/config/app_config.dart';
+import 'package:qrscan_app/views/Auth/login_screen.dart';
 import 'package:qrscan_app/views/shared/auth_shell.dart';
 import 'package:qrscan_app/utils/theme_colors.dart';
 
@@ -159,8 +160,12 @@ class _ResetPasswordWithCodeScreenState
         actions: [
           ElevatedButton(
             onPressed: () {
-              Navigator.of(context).pop(); // Close dialog
-              Navigator.of(context).pop(); // Go back to login
+              // Close dialog then reset navigation stack back to Login.
+              Navigator.of(context).pop();
+              Navigator.of(this.context).pushAndRemoveUntil(
+                MaterialPageRoute(builder: (_) => const LoginScreen()),
+                (route) => false,
+              );
             },
             child: const Text('Đăng nhập'),
           ),

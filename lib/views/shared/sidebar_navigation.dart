@@ -124,7 +124,7 @@ class _SidebarNavigationState extends State<SidebarNavigation> {
                       ),
                       const SizedBox(height: 16),
                       const Text(
-                        'LMS APP',
+                        'LMS General Report',
                         style: TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
@@ -398,7 +398,7 @@ class _SidebarNavigationState extends State<SidebarNavigation> {
     return Scaffold(
       key: _scaffoldKey,
       appBar: AppBar(
-        title: const Text('LMS APP'),
+        title: const Text('LMS General Report'),
         backgroundColor: ThemeColors.getPrimaryColor(context),
         foregroundColor: Colors.white,
         leading: IconButton(
