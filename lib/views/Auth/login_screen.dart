@@ -356,7 +356,9 @@ class _QrLoginScannerScreen extends StatefulWidget {
 }
 
 class _QrLoginScannerScreenState extends State<_QrLoginScannerScreen> {
-  final MobileScannerController _controller = MobileScannerController();
+  final MobileScannerController _controller = MobileScannerController(
+    formats: const [BarcodeFormat.qrCode],
+  );
   final TextEditingController _tokenController = TextEditingController();
   bool _submitting = false;
 
@@ -367,13 +369,15 @@ class _QrLoginScannerScreenState extends State<_QrLoginScannerScreen> {
     super.dispose();
   }
 
-  void _submitToken(String token) {
+  Future<void> _submitToken(String token) async {
     final trimmedToken = token.trim();
     if (_submitting || trimmedToken.isEmpty) {
       return;
     }
 
     _submitting = true;
+    await _controller.stop();
+    if (!mounted) return;
     Navigator.of(context).pop(trimmedToken);
   }
 
@@ -391,6 +395,30 @@ class _QrLoginScannerScreenState extends State<_QrLoginScannerScreen> {
                 if (rawValue != null) {
                   _submitToken(rawValue);
                 }
+              },
+              errorBuilder: (context, error) {
+                return Center(
+                  child: Padding(
+                    padding: const EdgeInsets.all(24),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(
+                          Icons.no_photography_outlined,
+                          size: 48,
+                          color: Colors.redAccent,
+                        ),
+                        const SizedBox(height: 12),
+                        Text(
+                          'Không mở được camera. Vui lòng cấp quyền camera '
+                          'hoặc dán token QR bên dưới.',
+                          textAlign: TextAlign.center,
+                          style: ThemeColors.getHintStyle(context),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
               },
             ),
           ),
