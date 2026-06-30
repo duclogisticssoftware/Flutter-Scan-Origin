@@ -1,13 +1,14 @@
 import 'dart:convert';
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
+import 'package:qrscan_app/services/container_inventory_service.dart';
+import 'package:qrscan_app/services/http_service.dart';
 import 'package:qrscan_app/utils/save_file_stub.dart'
     if (dart.library.html) 'package:qrscan_app/utils/save_file_web.dart'
     as save_file;
-import 'package:qrscan_app/config/app_config.dart';
-import 'package:qrscan_app/services/http_service.dart';
-import 'package:qrscan_app/services/inventory_export_service.dart'
-    show InventoryExportRow, exportInventoryToExcel, exportInventoryToPdf;
 import 'package:qrscan_app/utils/theme_colors.dart';
+import 'package:qrscan_app/views/Inventory/yard_import_screen.dart';
 
 class InventoryScreen extends StatefulWidget {
   const InventoryScreen({super.key});
@@ -18,21 +19,18 @@ class InventoryScreen extends StatefulWidget {
 
 class _InventoryScreenState extends State<InventoryScreen> {
   bool _loading = false;
-  List<Map<String, dynamic>> _containers = [];
   String? _error;
+  Map<String, dynamic> _dashboard = {};
+  final ContainerInventoryQuery _query = ContainerInventoryQuery();
+  final TextEditingController _searchController = TextEditingController();
+  bool _showDetailGrid = true;
+  String? _selectedContainer;
+  List<dynamic> _selectedEvents = [];
 
-  int _inDepotCount = 0;
-  int _waitingPortArrivalCount = 0;
-  int _arrivedAtPortCount = 0;
-  int _inTransitCount = 0;
-
-  List<String> _distinctSizeTypes = [];
-  List<_InventoryGroupRow> _inDepotRows = [];
-  List<_InventoryGroupRow> _inPortRows = [];
-
-  final TextEditingController _searchInDepotController =
-      TextEditingController();
-  final TextEditingController _searchInPortController = TextEditingController();
+  int _detailPage = 0;
+  int _detailRowsPerPage = 25;
+  final ScrollController _detailVCtrl = ScrollController();
+  final ScrollController _detailHCtrl = ScrollController();
 
   @override
   void initState() {
@@ -42,8 +40,9 @@ class _InventoryScreenState extends State<InventoryScreen> {
 
   @override
   void dispose() {
-    _searchInDepotController.dispose();
-    _searchInPortController.dispose();
+    _searchController.dispose();
+    _detailVCtrl.dispose();
+    _detailHCtrl.dispose();
     super.dispose();
   }
 
@@ -52,783 +51,319 @@ class _InventoryScreenState extends State<InventoryScreen> {
       _loading = true;
       _error = null;
     });
-
     try {
-      final response = await HttpService.get(
-        '$apiBase/api/Container/container',
+      final data = await ContainerInventoryService.getDashboard(
+        search: _query.search,
+        sourceFilter: _query.sourceFilter,
+        agentFilter: _query.agentFilter,
+        lineFilter: _query.lineFilter,
+        depotFilter: _query.depotFilter,
+        sizeFilter: _query.sizeFilter,
+        statusFilter: _query.statusFilter,
+        felFilter: _query.felFilter,
+        minDemDaysFilter: _query.minDemDaysFilter,
+        minDetDaysFilter: _query.minDetDaysFilter,
+        excludeDamaged: _query.excludeDamaged,
+        demFreeDays: _query.demFreeDays,
+        detFreeDays: _query.detFreeDays,
       );
-
-      if (!mounted) return;
-
-      if (HttpService.isSuccess(response)) {
-        try {
-          final body = jsonDecode(response.body);
-          if (body is! Map<String, dynamic>) {
-            setState(() {
-              _containers = [];
-              _loading = false;
-              _buildDashboard();
-            });
-            return;
-          }
-          final data = body['data'];
-          List<dynamic> rawList = [];
-          if (data is List) {
-            rawList = data;
-          } else if (data is Map) {
-            rawList = data.values.toList();
-          }
-          final list = <Map<String, dynamic>>[];
-          for (var i = 0; i < rawList.length; i++) {
-            final e = rawList[i];
-            if (e is Map<String, dynamic>) {
-              list.add(e);
-            } else if (e is Map) {
-              list.add(Map<String, dynamic>.from(e));
-            } else {
-              list.add(<String, dynamic>{});
-            }
-          }
-          setState(() {
-            _containers = list;
-            _loading = false;
-            _buildDashboard();
-          });
-        } catch (parseError) {
-          if (mounted) {
-            setState(() {
-              _error = 'Lỗi parse: $parseError';
-              _loading = false;
-            });
-          }
-        }
-      } else {
+      if (mounted) {
         setState(() {
-          _error = HttpService.getErrorMessage(response);
+          _dashboard = data;
           _loading = false;
+          _detailPage = 0;
         });
       }
     } catch (e) {
       if (mounted) {
         setState(() {
-          _error = 'Lỗi: $e';
+          _error = e.toString().replaceFirst('Exception: ', '');
           _loading = false;
         });
       }
     }
   }
 
-  String _nvoccStatus(Map<String, dynamic> c) {
-    final v =
-        c['nvocC_Status'] ??
-        c['nvoCC_Status'] ??
-        c['NVOCC_Status'] ??
-        c['nvoCCStatus'];
-    if (v == null) return '';
-    final s = v.toString().trim();
-    if (s.isEmpty) return '';
-    return s.split(RegExp(r'\s+')).join(' ');
-  }
+  List<dynamic> _list(String key) => (_dashboard[key] as List<dynamic>?) ?? [];
+  List<String> _options(String key) =>
+      _list(key).map((e) => e.toString()).toList();
+  int _int(String key) => (_dashboard[key] as num?)?.toInt() ?? 0;
 
-  String _inDepot(Map<String, dynamic> c) {
-    final v = c['in_Depot'] ?? c['In_Depot'] ?? c['inDepot'];
-    if (v != null) return v.toString().trim();
-    return '';
-  }
-
-  String _inPort(Map<String, dynamic> c) {
-    final v = c['in_Port'] ?? c['In_Port'] ?? c['inPort'];
-    if (v != null) return v.toString().trim();
-    return '';
-  }
-
-  String _sizeType(Map<String, dynamic> c) {
-    final v =
-        c['ctN_SIZE_TYPE'] ??
-        c['ctn_SIZE_TYPE'] ??
-        c['CTN_SIZE_TYPE'] ??
-        c['ctnSizeType'];
-    if (v != null) return v.toString().trim();
-    return '';
-  }
-
-  bool _decommission(Map<String, dynamic> c) {
-    final v = c['decommision'] ?? c['Decommision'];
-    if (v == null) return false;
-    if (v is bool) return v;
-    if (v is String) return v.toLowerCase() == 'true';
-    return false;
-  }
-
-  static int _getLeadingNumber(String? sizeType) {
-    if (sizeType == null || sizeType.trim().isEmpty) return 0x7FFFFFFF;
-    final s = sizeType.trim();
-    int i = 0;
-    while (i < s.length && s[i].contains(RegExp(r'[0-9]'))) i++;
-    if (i == 0) return 0x7FFFFFFF;
-    return int.tryParse(s.substring(0, i)) ?? 0x7FFFFFFF;
-  }
-
-  static String _getSuffix(String? sizeType) {
-    if (sizeType == null || sizeType.trim().isEmpty) return '';
-    final s = sizeType.trim();
-    int i = 0;
-    while (i < s.length && s[i].contains(RegExp(r'[0-9]'))) i++;
-    return i < s.length ? s.substring(i) : '';
-  }
-
-  void _buildDashboard() {
+  Future<void> _exportCsv() async {
     try {
-      const inDepotStatus = 'in depot';
-      const waitingStatus = 'waiting port arrival';
-      const arrivedStatus = 'arrived at port';
-      const inTransitStatus = 'in transit';
-
-      _inDepotCount = _containers
-          .where((c) => _nvoccStatus(c).toLowerCase() == inDepotStatus)
-          .length;
-      _waitingPortArrivalCount = _containers
-          .where((c) => _nvoccStatus(c).toLowerCase() == waitingStatus)
-          .length;
-      _arrivedAtPortCount = _containers
-          .where((c) => _nvoccStatus(c).toLowerCase() == arrivedStatus)
-          .length;
-      _inTransitCount = _containers
-          .where((c) => _nvoccStatus(c).toLowerCase() == inTransitStatus)
-          .length;
-
-      // Chỉ lấy "In Depot" và "Arrived at Port" giống Razor containersForTables
-      final forTables = _containers.where((c) {
-        final s = _nvoccStatus(c).toLowerCase();
-        return s == inDepotStatus || s == arrivedStatus;
-      }).toList();
-
-      // DistinctSizeTypes từ forTables, unique ignore case (giữ lần đầu), rồi sort giống Razor
-      final sizeTypeList = <String>[];
-      for (final c in forTables) {
-        final st = _sizeType(c);
-        if (st.isEmpty) continue;
-        final lower = st.toLowerCase();
-        if (sizeTypeList.any((e) => e.toLowerCase() == lower)) continue;
-        sizeTypeList.add(st);
-      }
-      _distinctSizeTypes = sizeTypeList
-        ..sort((a, b) {
-          final na = _getLeadingNumber(a);
-          final nb = _getLeadingNumber(b);
-          if (na != nb) return na.compareTo(nb);
-          return _getSuffix(
-            a,
-          ).toLowerCase().compareTo(_getSuffix(b).toLowerCase());
-        });
-
-      final inDepotList = _containers
-          .where((c) => _nvoccStatus(c).toLowerCase() == inDepotStatus)
-          .toList();
-      final inPortList = _containers
-          .where((c) => _nvoccStatus(c).toLowerCase() == arrivedStatus)
-          .toList();
-
-      _inDepotRows = _buildGroupedRows(inDepotList, _inDepot);
-      _inPortRows = _buildGroupedRows(inPortList, _inPort);
-    } catch (e) {
-      _inDepotCount = 0;
-      _waitingPortArrivalCount = 0;
-      _arrivedAtPortCount = 0;
-      _inTransitCount = 0;
-      _distinctSizeTypes = [];
-      _inDepotRows = [];
-      _inPortRows = [];
-    }
-  }
-
-  /// Giống Razor BuildGroupedRows: GroupBy(keySelector), Location = null/whitespace ? "N/A" : key,
-  /// SizeCounts = count theo CTN_SIZE_TYPE equals (ignore case), DecommissionCount = count Decommision == true.
-  List<_InventoryGroupRow> _buildGroupedRows(
-    List<Map<String, dynamic>> source,
-    String Function(Map<String, dynamic>) keySelector,
-  ) {
-    final map = <String, List<Map<String, dynamic>>>{};
-    for (final c in source) {
-      final key = keySelector(c);
-      final trimmed = key.trim();
-      final locationKey = trimmed.isEmpty ? 'N/A' : trimmed;
-      map.putIfAbsent(locationKey, () => []).add(c);
-    }
-    return map.entries.map((e) {
-      final list = e.value;
-      final sizeCounts = <String, int>{};
-      for (final st in _distinctSizeTypes) {
-        sizeCounts[st] = list
-            .where((c) => _sizeType(c).toLowerCase() == st.toLowerCase())
-            .length;
-      }
-      return _InventoryGroupRow(
-        location: e.key,
-        containerCount: list.length,
-        sizeCounts: sizeCounts,
-        decommissionCount: list.where(_decommission).length,
+      final token = await HttpService.get(
+        ContainerInventoryService.buildExportCsvUrl(_query),
+        timeout: const Duration(seconds: 120),
       );
-    }).toList()..sort((a, b) => a.location.compareTo(b.location));
-  }
-
-  List<_InventoryGroupRow> get _filteredInDepotRows {
-    final q = _searchInDepotController.text.trim().toLowerCase();
-    if (q.isEmpty) return _inDepotRows;
-    return _inDepotRows
-        .where((r) => r.location.toLowerCase().contains(q))
-        .toList();
-  }
-
-  List<_InventoryGroupRow> get _filteredInPortRows {
-    final q = _searchInPortController.text.trim().toLowerCase();
-    if (q.isEmpty) return _inPortRows;
-    return _inPortRows
-        .where((r) => r.location.toLowerCase().contains(q))
-        .toList();
-  }
-
-  List<InventoryExportRow> _toExportRows(List<_InventoryGroupRow> rows) {
-    return rows
-        .map(
-          (r) => InventoryExportRow(
-            location: r.location,
-            containerCount: r.containerCount,
-            sizeCounts: Map<String, int>.from(r.sizeCounts),
-            decommissionCount: r.decommissionCount,
-          ),
-        )
-        .toList();
-  }
-
-  Future<void> _exportExcelDepot() async {
-    await _exportExcel(
-      sheetName: 'IN DEPOT Containers',
-      locationHeader: 'IN DEPOT',
-      rows: _filteredInDepotRows,
-      fileName: 'IN DEPOT Containers.xlsx',
-    );
-  }
-
-  Future<void> _exportExcelPort() async {
-    await _exportExcel(
-      sheetName: 'IN PORT Containers',
-      locationHeader: 'IN PORT',
-      rows: _filteredInPortRows,
-      fileName: 'IN PORT Containers.xlsx',
-    );
-  }
-
-  Future<void> _exportPdfDepot() async {
-    try {
-      final depot = _toExportRows(_filteredInDepotRows);
-      const title = 'IN DEPOT Containers';
-      const locationHeader = 'IN DEPOT';
-      const decommissionHeader = 'Decommision';
-      final bytes = await exportInventoryToPdf(
-        rows: depot,
-        sizeTypes: _distinctSizeTypes,
-        title: title,
-        locationHeader: locationHeader,
-        decommissionHeader: decommissionHeader,
-      );
-      if (bytes == null || bytes.isEmpty) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Không thể tạo file PDF.')),
-          );
-        }
-        return;
+      if (!HttpService.isSuccess(token)) {
+        throw Exception(HttpService.getErrorMessage(token));
       }
-      final result = await save_file.saveFile(bytes, 'IN DEPOT Containers.pdf');
-      if (mounted) {
-        if (result != null && result.isNotEmpty) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Đã lưu: $result')),
-          );
-        } else {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Đã xuất PDF (hoặc đã hủy lưu).')),
-          );
-        }
-      }
-    } catch (e) {
-      debugPrint('[PDF] Lỗi: $e');
+      final bytes = Uint8List.fromList(utf8.encode(token.body));
+      final name =
+          'ContainerInventory_${DateTime.now().millisecondsSinceEpoch}.csv';
+      await save_file.saveFile(bytes, name);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Xuất PDF thất bại: $e')),
+          const SnackBar(content: Text('Đã xuất CSV')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Xuất CSV thất bại: $e')),
         );
       }
     }
   }
 
-  Future<void> _exportPdfPort() async {
-    try {
-      final port = _toExportRows(_filteredInPortRows);
-      const title = 'IN PORT Containers';
-      const locationHeader = 'IN PORT';
-      const decommissionHeader = 'Decommision';
-      final bytes = await exportInventoryToPdf(
-        rows: port,
-        sizeTypes: _distinctSizeTypes,
-        title: title,
-        locationHeader: locationHeader,
-        decommissionHeader: decommissionHeader,
-      );
-      if (bytes == null || bytes.isEmpty) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Không thể tạo file PDF.')),
-          );
-        }
-        return;
-      }
-      final result = await save_file.saveFile(bytes, 'IN PORT Containers.pdf');
-      if (mounted) {
-        if (result != null && result.isNotEmpty) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Đã lưu: $result')),
-          );
-        } else {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Đã xuất PDF (hoặc đã hủy lưu).')),
-          );
-        }
-      }
-    } catch (e) {
-      debugPrint('[PDF] Lỗi: $e');
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Xuất PDF thất bại: $e')),
-        );
-      }
-    }
+  Future<void> _openImport(String version, String title) async {
+    await Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => YardImportScreen(version: version, title: title),
+      ),
+    );
+    if (mounted) _loadData();
   }
 
-  Future<void> _exportExcel({
-    required String sheetName,
-    required String locationHeader,
-    required List<_InventoryGroupRow> rows,
-    required String fileName,
-  }) async {
+  Future<void> _selectContainer(String containerKey) async {
+    setState(() {
+      _selectedContainer = containerKey;
+      _selectedEvents = [];
+    });
     try {
-      debugPrint(
-        '[Excel] Bắt đầu xuất: sheetName=$sheetName, rows=${rows.length}, sizeTypes=${_distinctSizeTypes.length}',
-      );
-      final exportRows = _toExportRows(rows);
-      debugPrint('[Excel] exportRows=${exportRows.length}');
-
-      final bytes = exportInventoryToExcel(
-        sheetName: sheetName,
-        locationHeader: locationHeader,
-        rows: exportRows,
-        sizeTypes: _distinctSizeTypes,
-      );
-      debugPrint('[Excel] bytes=${bytes?.length ?? 0}');
-
-      if (bytes == null || bytes.isEmpty) {
-        debugPrint('[Excel] bytes null hoặc rỗng');
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Không thể tạo file Excel.')),
-          );
-        }
-        return;
-      }
-
-      final nameForDownload = fileName.endsWith('.xlsx')
-          ? fileName
-          : '$fileName.xlsx';
-      debugPrint('[Excel] Gọi saveFile: fileName=$nameForDownload');
-      final result = await save_file.saveFile(bytes, nameForDownload);
-      debugPrint('[Excel] saveFile result: $result');
-
-      if (mounted) {
-        if (result != null && result.isNotEmpty) {
-          ScaffoldMessenger.of(
-            context,
-          ).showSnackBar(SnackBar(content: Text('Đã lưu: $result')));
-        } else {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Đã xuất Excel (hoặc đã hủy lưu).')),
-          );
-        }
-      }
-    } catch (e, stack) {
-      debugPrint('[Excel] Lỗi: $e');
-      debugPrint('[Excel] Stack: $stack');
-      if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Lỗi xuất Excel: $e')));
-      }
-    }
-  }
-
-  void _onExport(String table) {
-    if (table == 'In Depot') {
-      _exportExcelDepot();
-    } else if (table == 'In Port') {
-      _exportExcelPort();
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Export $table – tính năng sắp ra mắt')),
-      );
-    }
+      final events = await ContainerInventoryService.getContainerEvents(containerKey);
+      if (mounted) setState(() => _selectedEvents = events);
+    } catch (_) {}
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: const Color(0xFFF4F8FB),
       appBar: AppBar(
-        title: const Text('Container Inventory'),
+        title: const Text('8.3.3 Container Inventory'),
         backgroundColor: ThemeColors.getPrimaryColor(context),
         foregroundColor: Colors.white,
-        actions: [
-          Padding(
-            padding: const EdgeInsets.only(right: 16),
-            child: FilledButton.icon(
-              onPressed: _loading ? null : _loadData,
-              icon: _loading
-                  ? const SizedBox(
-                      width: 18,
-                      height: 18,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        color: Colors.white,
-                      ),
-                    )
-                  : const Icon(Icons.refresh, size: 20),
-              label: const Text('Refresh'),
-              style: FilledButton.styleFrom(
-                backgroundColor: ThemeColors.getPrimaryColor(context),
-              ),
-            ),
-          ),
-        ],
       ),
       body: _error != null
           ? _buildError()
-          : SingleChildScrollView(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  _buildSummaryCards(),
-                  const SizedBox(height: 24),
-                  _buildTables(),
-                ],
+          : RefreshIndicator(
+              onRefresh: _loadData,
+              child: SingleChildScrollView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                padding: const EdgeInsets.all(12),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    _buildHeader(),
+                    const SizedBox(height: 12),
+                    _buildFilters(),
+                    const SizedBox(height: 12),
+                    _buildSummaryCards(),
+                    const SizedBox(height: 12),
+                    _buildGroupTables(),
+                    const SizedBox(height: 12),
+                    _buildDetailSection(),
+                    if (_selectedContainer != null) ...[
+                      const SizedBox(height: 12),
+                      _buildEventSection(),
+                    ],
+                  ],
+                ),
               ),
             ),
     );
   }
 
-  Widget _buildError() {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.error_outline, size: 48, color: Colors.red[700]),
-            const SizedBox(height: 16),
-            Text(
-              _error!,
-              textAlign: TextAlign.center,
-              style: TextStyle(color: Colors.red[700]),
-            ),
-            const SizedBox(height: 16),
-            FilledButton.icon(
-              onPressed: _loadData,
-              icon: const Icon(Icons.refresh),
-              label: const Text('Thử lại'),
-            ),
-          ],
+  Widget _buildError() => Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text(_error!, textAlign: TextAlign.center),
+              const SizedBox(height: 16),
+              FilledButton(onPressed: _loadData, child: const Text('Thử lại')),
+            ],
+          ),
         ),
-      ),
-    );
-  }
+      );
 
-  Widget _buildSummaryCards() {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final crossAxisCount = constraints.maxWidth > 900
-            ? 4
-            : constraints.maxWidth > 600
-            ? 2
-            : 1;
-        return GridView.count(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          crossAxisCount: crossAxisCount,
-          mainAxisSpacing: 16,
-          crossAxisSpacing: 16,
-          childAspectRatio: 1.9,
-          children: [
-            _summaryCard(
-              'In Depot',
-              'Container',
-              _inDepotCount,
-              Icons.inventory_2,
-              Colors.blue,
-            ),
-            _summaryCard(
-              'Waiting Port Arrival',
-              'Container',
-              _waitingPortArrivalCount,
-              Icons.alarm_on,
-              Colors.lightBlue,
-            ),
-            _summaryCard(
-              'Arrived at Port',
-              'Container',
-              _arrivedAtPortCount,
-              Icons.local_shipping,
-              Colors.green,
-            ),
-            _summaryCard(
-              'In Transit',
-              'Container',
-              _inTransitCount,
-              Icons.directions_boat,
-              Colors.orange,
-            ),
-          ],
-        );
-      },
-    );
-  }
-
-  Widget _summaryCard(
-    String title,
-    String subtitle,
-    int count,
-    IconData icon,
-    Color color,
-  ) {
+  Widget _buildHeader() {
+    final sourceInfo = _dashboard['sourceInfo']?.toString() ?? '';
     return Card(
-      elevation: 2,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Flexible(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(
-                    title,
-                    style: Theme.of(
-                      context,
-                    ).textTheme.titleSmall?.copyWith(color: Colors.grey[700]),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  Text(
-                    subtitle,
-                    style: Theme.of(context).textTheme.bodySmall,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    '$count',
-                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            CircleAvatar(
-              backgroundColor: color,
-              radius: 20,
-              child: Icon(icon, color: Colors.white, size: 22),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildTables() {
-    return Column(
-      children: [
-        _buildInDepotTable(),
-        const SizedBox(height: 24),
-        _buildInPortTable(),
-      ],
-    );
-  }
-
-  Widget _buildInDepotTable() {
-    return _buildTableCard(
-      title: 'IN DEPOT',
-      searchController: _searchInDepotController,
-      rows: _filteredInDepotRows,
-      onExport: () => _onExport('In Depot'),
-      onExportPdf: _exportPdfDepot,
-    );
-  }
-
-  Widget _buildInPortTable() {
-    return _buildTableCard(
-      title: 'IN PORT',
-      searchController: _searchInPortController,
-      rows: _filteredInPortRows,
-      onExport: () => _onExport('In Port'),
-      onExportPdf: _exportPdfPort,
-    );
-  }
-
-  Widget _buildTableCard({
-    required String title,
-    required TextEditingController searchController,
-    required List<_InventoryGroupRow> rows,
-    required VoidCallback onExport,
-    required VoidCallback onExportPdf,
-  }) {
-    return Card(
-      elevation: 2,
+      elevation: 0,
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            LayoutBuilder(
-              builder: (context, constraints) {
-                final isNarrow = constraints.maxWidth < 500;
-                if (isNarrow) {
-                  return Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      Wrap(
-                        spacing: 8,
-                        runSpacing: 8,
-                        children: [
-                          FilledButton.icon(
-                            onPressed: _loading ? null : onExport,
-                            icon: const Icon(Icons.table_chart, size: 18),
-                            label: const Text('Excel'),
-                            style: FilledButton.styleFrom(
-                              backgroundColor: Colors.green,
-                              foregroundColor: Colors.white,
-                            ),
-                          ),
+            const Text(
+              '8.3.3 Container Inventory',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 4),
+            const Text(
+              'Statistics from yard/import tables – same logic as Blazor web.',
+              style: TextStyle(fontSize: 12, color: Colors.grey),
+            ),
+            if (sourceInfo.isNotEmpty)
+              Text('Data source: $sourceInfo', style: const TextStyle(fontSize: 12)),
+            const SizedBox(height: 12),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                _btn('8.3.4 Import', Icons.upload_file, Colors.green,
+                    () => _openImport('834', '8.3.4 Yard Movement')),
+                _btn('8.3.5 Import', Icons.upload_file, Colors.blue,
+                    () => _openImport('835', '8.3.5 Depot Container')),
+                _btn('8.3.6 Import', Icons.upload_file, Colors.orange,
+                    () => _openImport('836', '8.3.6 Stock In/Out APS')),
+                _btn('8.3.7 SP-ITC', Icons.upload_file, Colors.blueGrey,
+                    () => _openImport('837', '8.3.7 SP-ITC Yard')),
+                _btn('Refresh', Icons.refresh, ThemeColors.getPrimaryColor(context),
+                    _loading ? null : _loadData, loading: _loading),
+                OutlinedButton.icon(
+                  onPressed: _loading ? null : _exportCsv,
+                  icon: const Icon(Icons.file_download, size: 18),
+                  label: const Text('CSV'),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 
-                          OutlinedButton(
-                            style: OutlinedButton.styleFrom(
-                              foregroundColor: Colors.red,
-                            ),
-                            child: const Text('PDF'),
-                            onPressed: _loading ? null : onExportPdf,
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 12),
-                      TextField(
-                        controller: searchController,
-                        onChanged: (_) => setState(() {}),
-                        decoration: InputDecoration(
-                          hintText: 'Search',
-                          prefixIcon: const Icon(Icons.search, size: 20),
-                          isDense: true,
-                          border: const OutlineInputBorder(),
-                          contentPadding: const EdgeInsets.symmetric(
-                            horizontal: 12,
-                            vertical: 10,
-                          ),
-                        ),
-                      ),
-                    ],
-                  );
-                }
-                return Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Wrap(
-                      spacing: 8,
-                      runSpacing: 8,
-                      children: [
-                        FilledButton.icon(
-                          onPressed: _loading ? null : onExport,
-                          icon: const Icon(Icons.table_chart, size: 18),
-                          label: const Text('Excel'),
-                          style: FilledButton.styleFrom(
-                            backgroundColor: Colors.green,
-                            foregroundColor: Colors.white,
-                          ),
-                        ),
+  Widget _btn(String label, IconData icon, Color color, VoidCallback? onPressed,
+      {bool loading = false}) {
+    return FilledButton.icon(
+      onPressed: onPressed,
+      style: FilledButton.styleFrom(backgroundColor: color, foregroundColor: Colors.white),
+      icon: loading
+          ? const SizedBox(
+              width: 16, height: 16,
+              child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+            )
+          : Icon(icon, size: 18),
+      label: Text(label),
+    );
+  }
 
-                        OutlinedButton(
-                          style: OutlinedButton.styleFrom(
-                            foregroundColor: Colors.red,
-                          ),
-                          child: const Text('PDF'),
-                          onPressed: _loading ? null : onExportPdf,
-                        ),
-                      ],
-                    ),
-                    SizedBox(
-                      width: 220,
-                      child: TextField(
-                        controller: searchController,
-                        onChanged: (_) => setState(() {}),
-                        decoration: InputDecoration(
-                          hintText: 'Search',
-                          prefixIcon: const Icon(Icons.search, size: 20),
-                          isDense: true,
-                          border: const OutlineInputBorder(),
-                          contentPadding: const EdgeInsets.symmetric(
-                            horizontal: 12,
-                            vertical: 10,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                );
+  Widget _buildFilters() {
+    return Card(
+      elevation: 0,
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Wrap(
+          spacing: 12,
+          runSpacing: 12,
+          children: [
+            SizedBox(
+              width: 280,
+              child: TextField(
+                controller: _searchController,
+                decoration: const InputDecoration(
+                  labelText: 'Search',
+                  border: OutlineInputBorder(),
+                  isDense: true,
+                ),
+                onSubmitted: (v) {
+                  _query.search = v;
+                  _loadData();
+                },
+              ),
+            ),
+            _drop('Source', _query.sourceFilter, _options('sourceOptions'), (v) {
+              _query.sourceFilter = v;
+              _loadData();
+            }),
+            _drop('AGENT', _query.agentFilter, _options('agentOptions'), (v) {
+              _query.agentFilter = v;
+              _loadData();
+            }),
+            _drop('LINE', _query.lineFilter, _options('lineOptions'), (v) {
+              _query.lineFilter = v;
+              _loadData();
+            }),
+            _drop('DEPOT', _query.depotFilter, _options('depotOptions'), (v) {
+              _query.depotFilter = v;
+              _loadData();
+            }),
+            _drop('Size/Type', _query.sizeFilter,
+                const ['20DC', '40HC', 'OTHER'], (v) {
+              _query.sizeFilter = v;
+              _loadData();
+            }),
+            _drop('Status', _query.statusFilter, const [
+              'In Depot',
+              'Waiting Port Arrival',
+              'Arrived at Port',
+              'In Transit',
+            ], (v) {
+              _query.statusFilter = v;
+              _loadData();
+            }),
+            _drop('F/E/D', _query.felFilter, const ['E', 'F', 'D'], (v) {
+              _query.felFilter = v;
+              _loadData();
+            }),
+            FilterChip(
+              label: const Text('Hide DAM'),
+              selected: _query.excludeDamaged,
+              onSelected: (v) {
+                _query.excludeDamaged = v;
+                _loadData();
               },
             ),
-            const SizedBox(height: 16),
-            SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: DataTable(
-                headingRowColor: WidgetStateProperty.all(
-                  ThemeColors.getPrimaryColor(context).withOpacity(0.12),
-                ),
-                columns: [
-                  DataColumn(
-                    label: Text(
-                      title,
-                      style: const TextStyle(fontWeight: FontWeight.bold),
-                    ),
-                  ),
-                  const DataColumn(
-                    label: Text(
-                      'CONTAINER COUNT',
-                      style: TextStyle(fontWeight: FontWeight.bold),
-                    ),
-                  ),
-                  ..._distinctSizeTypes.map(
-                    (s) => DataColumn(
-                      label: Text(
-                        s,
-                        style: const TextStyle(fontWeight: FontWeight.bold),
-                      ),
-                    ),
-                  ),
-                  const DataColumn(
-                    label: Text(
-                      'Decommision',
-                      style: TextStyle(fontWeight: FontWeight.bold),
-                    ),
-                  ),
-                ],
-                rows: rows.map((r) => _rowToDataRow(r)).toList(),
+            SizedBox(
+              width: 100,
+              child: TextFormField(
+                initialValue: '${_query.demFreeDays}',
+                decoration: const InputDecoration(labelText: 'DEM free', border: OutlineInputBorder(), isDense: true),
+                keyboardType: TextInputType.number,
+                onFieldSubmitted: (v) {
+                  _query.demFreeDays = int.tryParse(v) ?? 0;
+                  _loadData();
+                },
+              ),
+            ),
+            SizedBox(
+              width: 100,
+              child: TextFormField(
+                initialValue: '${_query.detFreeDays}',
+                decoration: const InputDecoration(labelText: 'DET free', border: OutlineInputBorder(), isDense: true),
+                keyboardType: TextInputType.number,
+                onFieldSubmitted: (v) {
+                  _query.detFreeDays = int.tryParse(v) ?? 0;
+                  _loadData();
+                },
+              ),
+            ),
+            SizedBox(
+              width: 90,
+              child: TextFormField(
+                initialValue: _query.minDemDaysFilter?.toString() ?? '',
+                decoration: const InputDecoration(labelText: 'DEM ≥', border: OutlineInputBorder(), isDense: true),
+                keyboardType: TextInputType.number,
+                onFieldSubmitted: (v) {
+                  _query.minDemDaysFilter = v.isEmpty ? null : int.tryParse(v);
+                  _loadData();
+                },
+              ),
+            ),
+            SizedBox(
+              width: 90,
+              child: TextFormField(
+                initialValue: _query.minDetDaysFilter?.toString() ?? '',
+                decoration: const InputDecoration(labelText: 'DET ≥', border: OutlineInputBorder(), isDense: true),
+                keyboardType: TextInputType.number,
+                onFieldSubmitted: (v) {
+                  _query.minDetDaysFilter = v.isEmpty ? null : int.tryParse(v);
+                  _loadData();
+                },
               ),
             ),
           ],
@@ -837,35 +372,428 @@ class _InventoryScreenState extends State<InventoryScreen> {
     );
   }
 
-  DataRow _rowToDataRow(_InventoryGroupRow r) {
-    return DataRow(
-      cells: [
-        DataCell(Text(r.location)),
-        DataCell(Text('${r.containerCount}')),
-        ..._distinctSizeTypes.map(
-          (st) => DataCell(Text('${r.getSizeCount(st)}')),
-        ),
-        DataCell(Text('${r.decommissionCount}')),
+  Widget _drop(String label, String? value, List<String> items, ValueChanged<String?> onChanged) {
+    return SizedBox(
+      width: 160,
+      child: DropdownButtonFormField<String>(
+        value: value != null && items.contains(value) ? value : null,
+        isExpanded: true,
+        decoration: InputDecoration(labelText: label, border: const OutlineInputBorder(), isDense: true),
+        items: [
+          const DropdownMenuItem(value: null, child: Text('All')),
+          ...items.map((v) => DropdownMenuItem(
+                value: v,
+                child: Text(v, overflow: TextOverflow.ellipsis),
+              )),
+        ],
+        onChanged: onChanged,
+      ),
+    );
+  }
+
+  Widget _buildSummaryCards() {
+    return GridView.count(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      crossAxisCount: MediaQuery.of(context).size.width > 700 ? 4 : 2,
+      mainAxisSpacing: 12,
+      crossAxisSpacing: 12,
+      childAspectRatio: 1.8,
+      children: [
+        _kpi('In Depot', _int('inDepotCount'), Icons.inventory_2, Colors.blue),
+        _kpi('Waiting Port', _int('waitingPortCount'), Icons.pending_actions, Colors.lightBlue),
+        _kpi('Arrived at Port', _int('arrivedPortCount'), Icons.local_shipping, Colors.green),
+        _kpi('In Transit', _int('inTransitCount'), Icons.directions_boat, Colors.orange),
       ],
     );
   }
-}
 
-class _InventoryGroupRow {
-  final String location;
-  final int containerCount;
-  final Map<String, int> sizeCounts;
-  final int decommissionCount;
+  Widget _kpi(String title, int count, IconData icon, Color color) {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Row(
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
+                  Text('$count', style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
+                ],
+              ),
+            ),
+            CircleAvatar(backgroundColor: color, child: Icon(icon, color: Colors.white)),
+          ],
+        ),
+      ),
+    );
+  }
 
-  _InventoryGroupRow({
-    required this.location,
-    required this.containerCount,
-    required this.sizeCounts,
-    required this.decommissionCount,
-  });
+  Widget _buildGroupTables() {
+    return Column(
+      children: [
+        _groupCard('IN DEPOT', _int('inDepotCount'), _list('inDepotGroups'), Colors.blue),
+        const SizedBox(height: 12),
+        _groupCard('ARRIVED AT PORT', _int('arrivedPortCount'), _list('arrivedPortGroups'), Colors.green),
+        const SizedBox(height: 12),
+        _groupCard('WAITING PORT ARRIVAL', _int('waitingPortCount'), _list('waitingPortGroups'), Colors.lightBlue),
+        const SizedBox(height: 12),
+        _groupCard('IN TRANSIT', _int('inTransitCount'), _list('inTransitGroups'), Colors.orange),
+      ],
+    );
+  }
 
-  int getSizeCount(String sizeType) {
-    if (sizeType.isEmpty) return 0;
-    return sizeCounts[sizeType] ?? 0;
+  Widget _groupCard(String title, int count, List<dynamic> rows, Color color) {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
+                Chip(label: Text('$count cont'), visualDensity: VisualDensity.compact),
+              ],
+            ),
+            const SizedBox(height: 8),
+            if (rows.isEmpty)
+              const Padding(
+                padding: EdgeInsets.symmetric(vertical: 16),
+                child: Text('No data', style: TextStyle(color: Colors.grey)),
+              )
+            else
+              ConstrainedBox(
+                constraints: const BoxConstraints(maxHeight: 260),
+                child: Scrollbar(
+                  thumbVisibility: true,
+                  child: SingleChildScrollView(
+                    scrollDirection: Axis.vertical,
+                    child: SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      child: DataTable(
+                        headingRowHeight: 38,
+                        dataRowMinHeight: 34,
+                        dataRowMaxHeight: 40,
+                        headingRowColor: WidgetStatePropertyAll(
+                            color.withValues(alpha: 0.12)),
+                        columns: const [
+                          DataColumn(label: Text('DEPOT')),
+                          DataColumn(label: Text('AGENT')),
+                          DataColumn(label: Text('LINE')),
+                          DataColumn(label: Text('TYPE')),
+                          DataColumn(label: Text('TOTAL')),
+                          DataColumn(label: Text('E')),
+                          DataColumn(label: Text('F')),
+                          DataColumn(label: Text('D')),
+                          DataColumn(label: Text('Other')),
+                        ],
+                        rows: List.generate(rows.length, (i) {
+                          final m = rows[i] as Map<String, dynamic>;
+                          return DataRow(
+                            color: i.isEven
+                                ? const WidgetStatePropertyAll(Color(0xFFF7FAFC))
+                                : null,
+                            cells: [
+                              DataCell(Text('${m['depot'] ?? ''}')),
+                              DataCell(Text('${m['agent'] ?? ''}')),
+                              DataCell(Text('${m['line'] ?? ''}')),
+                              DataCell(Text('${m['containerType'] ?? ''}')),
+                              DataCell(Text('${m['containerCount'] ?? 0}')),
+                              DataCell(Text('${m['emptyCount'] ?? 0}')),
+                              DataCell(Text('${m['fullCount'] ?? 0}')),
+                              DataCell(Text('${m['damagedCount'] ?? 0}')),
+                              DataCell(Text('${m['otherFelCount'] ?? 0}')),
+                            ],
+                          );
+                        }),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDetailSection() {
+    final records = _list('records');
+    final total = records.length;
+    final pageCount = total == 0 ? 1 : (total / _detailRowsPerPage).ceil();
+    if (_detailPage >= pageCount) _detailPage = pageCount - 1;
+    if (_detailPage < 0) _detailPage = 0;
+    final start = _detailPage * _detailRowsPerPage;
+    final end =
+        (start + _detailRowsPerPage) > total ? total : start + _detailRowsPerPage;
+    final pageRows = start < total ? records.sublist(start, end) : <dynamic>[];
+
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                const Icon(Icons.grid_on, size: 18),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: Text(
+                    'CONTAINER DETAIL  ·  ${_dashboard['filteredCount'] ?? 0} / ${_dashboard['totalRecords'] ?? 0}',
+                    style: const TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                ),
+                TextButton.icon(
+                  onPressed: () =>
+                      setState(() => _showDetailGrid = !_showDetailGrid),
+                  icon: Icon(
+                      _showDetailGrid ? Icons.visibility_off : Icons.visibility,
+                      size: 18),
+                  label: Text(_showDetailGrid ? 'Hide' : 'Show'),
+                ),
+              ],
+            ),
+            if (_showDetailGrid) ...[
+              const Divider(height: 16),
+              if (total == 0)
+                const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 24),
+                  child: Center(
+                    child: Text('No containers match the current filters.',
+                        style: TextStyle(color: Colors.grey)),
+                  ),
+                )
+              else ...[
+                SizedBox(
+                  height: 420,
+                  child: Scrollbar(
+                    controller: _detailVCtrl,
+                    thumbVisibility: true,
+                    child: Scrollbar(
+                      controller: _detailHCtrl,
+                      thumbVisibility: true,
+                      notificationPredicate: (n) => n.depth == 1,
+                      child: SingleChildScrollView(
+                        controller: _detailVCtrl,
+                        scrollDirection: Axis.vertical,
+                        child: SingleChildScrollView(
+                          controller: _detailHCtrl,
+                          scrollDirection: Axis.horizontal,
+                          child: DataTable(
+                            headingRowHeight: 40,
+                            dataRowMinHeight: 36,
+                            dataRowMaxHeight: 44,
+                            headingRowColor: WidgetStatePropertyAll(
+                                ThemeColors.getPrimaryColor(context)
+                                    .withValues(alpha: 0.10)),
+                            columns: const [
+                              DataColumn(label: Text('DEPOT')),
+                              DataColumn(label: Text('Container')),
+                              DataColumn(label: Text('Status')),
+                              DataColumn(label: Text('IN/OUT')),
+                              DataColumn(label: Text('Size')),
+                              DataColumn(label: Text('F/E/D')),
+                              DataColumn(label: Text('Seal')),
+                            ],
+                            rows: List.generate(pageRows.length, (i) {
+                              final r = pageRows[i] as Map<String, dynamic>;
+                              final container =
+                                  '${r['itemNo'] ?? r['iteM_NO'] ?? r['ITEM_NO'] ?? ''}';
+                              final containerKey =
+                                  '${r['containerKey'] ?? container}';
+                              final selected = _selectedContainer == containerKey;
+                              return DataRow(
+                                selected: selected,
+                                color: selected
+                                    ? WidgetStatePropertyAll(
+                                        ThemeColors.getPrimaryColor(context)
+                                            .withValues(alpha: 0.18))
+                                    : (i.isEven
+                                        ? const WidgetStatePropertyAll(
+                                            Color(0xFFF7FAFC))
+                                        : null),
+                                onSelectChanged: (_) =>
+                                    _selectContainer(containerKey),
+                                cells: [
+                                  DataCell(Text('${r['depotDisplay'] ?? ''}')),
+                                  DataCell(Text(container)),
+                                  DataCell(Text('${r['status'] ?? ''}')),
+                                  DataCell(Text('${r['movementDisplay'] ?? ''}')),
+                                  DataCell(Text('${r['sizeType'] ?? ''}')),
+                                  DataCell(Text('${r['fel'] ?? ''}')),
+                                  DataCell(Text('${r['soseal'] ?? ''}')),
+                                ],
+                              );
+                            }),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                _buildPager(total, pageCount, start, end),
+              ],
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPager(int total, int pageCount, int start, int end) {
+    return Wrap(
+      spacing: 12,
+      runSpacing: 8,
+      crossAxisAlignment: WrapCrossAlignment.center,
+      alignment: WrapAlignment.spaceBetween,
+      children: [
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text('Rows:', style: TextStyle(fontSize: 12)),
+            const SizedBox(width: 6),
+            DropdownButton<int>(
+              value: _detailRowsPerPage,
+              isDense: true,
+              underline: const SizedBox.shrink(),
+              items: const [25, 50, 100, 200]
+                  .map((n) => DropdownMenuItem(value: n, child: Text('$n')))
+                  .toList(),
+              onChanged: (v) {
+                if (v == null) return;
+                setState(() {
+                  _detailRowsPerPage = v;
+                  _detailPage = 0;
+                });
+              },
+            ),
+          ],
+        ),
+        Text(
+          total == 0 ? '0' : '${start + 1}–$end of $total',
+          style: const TextStyle(fontSize: 12, color: Colors.black54),
+        ),
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            IconButton(
+              tooltip: 'First',
+              visualDensity: VisualDensity.compact,
+              onPressed:
+                  _detailPage > 0 ? () => setState(() => _detailPage = 0) : null,
+              icon: const Icon(Icons.first_page),
+            ),
+            IconButton(
+              tooltip: 'Previous',
+              visualDensity: VisualDensity.compact,
+              onPressed: _detailPage > 0
+                  ? () => setState(() => _detailPage--)
+                  : null,
+              icon: const Icon(Icons.chevron_left),
+            ),
+            Text('${_detailPage + 1} / $pageCount',
+                style: const TextStyle(fontSize: 12)),
+            IconButton(
+              tooltip: 'Next',
+              visualDensity: VisualDensity.compact,
+              onPressed: _detailPage < pageCount - 1
+                  ? () => setState(() => _detailPage++)
+                  : null,
+              icon: const Icon(Icons.chevron_right),
+            ),
+            IconButton(
+              tooltip: 'Last',
+              visualDensity: VisualDensity.compact,
+              onPressed: _detailPage < pageCount - 1
+                  ? () => setState(() => _detailPage = pageCount - 1)
+                  : null,
+              icon: const Icon(Icons.last_page),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildEventSection() {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                const Icon(Icons.history, size: 18),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: Text('EVENT HISTORY · $_selectedContainer',
+                      style: const TextStyle(fontWeight: FontWeight.bold)),
+                ),
+                IconButton(
+                  tooltip: 'Close',
+                  visualDensity: VisualDensity.compact,
+                  onPressed: () => setState(() {
+                    _selectedContainer = null;
+                    _selectedEvents = [];
+                  }),
+                  icon: const Icon(Icons.close, size: 18),
+                ),
+              ],
+            ),
+            const Divider(height: 16),
+            if (_selectedEvents.isEmpty)
+              const Padding(
+                padding: EdgeInsets.symmetric(vertical: 16),
+                child: Text('No events', style: TextStyle(color: Colors.grey)),
+              )
+            else
+              ConstrainedBox(
+                constraints: const BoxConstraints(maxHeight: 280),
+                child: Scrollbar(
+                  thumbVisibility: true,
+                  child: SingleChildScrollView(
+                    scrollDirection: Axis.vertical,
+                    child: SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      child: DataTable(
+                        headingRowHeight: 38,
+                        dataRowMinHeight: 34,
+                        dataRowMaxHeight: 40,
+                        columns: const [
+                          DataColumn(label: Text('Source')),
+                          DataColumn(label: Text('Status')),
+                          DataColumn(label: Text('Method')),
+                          DataColumn(label: Text('Reason')),
+                        ],
+                        rows: List.generate(_selectedEvents.length, (i) {
+                          final r = _selectedEvents[i] as Map<String, dynamic>;
+                          return DataRow(
+                            color: i.isEven
+                                ? const WidgetStatePropertyAll(Color(0xFFF7FAFC))
+                                : null,
+                            cells: [
+                              DataCell(Text('${r['sourceTable'] ?? ''}')),
+                              DataCell(Text('${r['status'] ?? ''}')),
+                              DataCell(Text('${r['eventMethod'] ?? ''}')),
+                              DataCell(Text('${r['statusReason'] ?? ''}')),
+                            ],
+                          );
+                        }),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
   }
 }

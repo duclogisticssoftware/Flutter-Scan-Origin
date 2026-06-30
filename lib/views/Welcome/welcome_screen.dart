@@ -148,8 +148,8 @@ class WelcomeScreen extends StatelessWidget {
                     _buildQuickActionCard(
                       context: context,
                       icon: Icons.inventory_2,
-                      title: 'Inventory',
-                      subtitle: 'Container Inventory',
+                      title: 'Container Inventory',
+                      subtitle: '8.3.3 Dashboard',
                       color: const Color(0xFF009688),
                       onTap: () =>
                           _navigateToScreen(context, const InventoryScreen()),

@@ -41,8 +41,8 @@ class _SidebarNavigationState extends State<SidebarNavigation> {
       screen: const ReportScreen(),
     ),
     NavigationItem(
-      icon: Icons.inventory,
-      title: 'Inventory',
+      icon: Icons.inventory_2,
+      title: 'Container Inventory',
       screen: const InventoryScreen(),
     ),
     NavigationItem(
