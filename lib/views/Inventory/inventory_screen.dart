@@ -8,6 +8,7 @@ import 'package:qrscan_app/utils/save_file_stub.dart'
     if (dart.library.html) 'package:qrscan_app/utils/save_file_web.dart'
     as save_file;
 import 'package:qrscan_app/utils/theme_colors.dart';
+import 'package:qrscan_app/views/Inventory/container_inventory_table.dart';
 import 'package:qrscan_app/views/Inventory/yard_import_screen.dart';
 
 class InventoryScreen extends StatefulWidget {
@@ -24,7 +25,9 @@ class _InventoryScreenState extends State<InventoryScreen> {
   final ContainerInventoryQuery _query = ContainerInventoryQuery();
   final TextEditingController _searchController = TextEditingController();
   bool _showDetailGrid = true;
+  bool _showEventGrid = true;
   String? _selectedContainer;
+  Map<String, dynamic>? _selectedRecord;
   List<dynamic> _selectedEvents = [];
 
   int _detailPage = 0;
@@ -61,6 +64,7 @@ class _InventoryScreenState extends State<InventoryScreen> {
         sizeFilter: _query.sizeFilter,
         statusFilter: _query.statusFilter,
         felFilter: _query.felFilter,
+        damageFilter: _query.damageFilter,
         minDemDaysFilter: _query.minDemDaysFilter,
         minDetDaysFilter: _query.minDetDaysFilter,
         excludeDamaged: _query.excludeDamaged,
@@ -126,12 +130,26 @@ class _InventoryScreenState extends State<InventoryScreen> {
   }
 
   Future<void> _selectContainer(String containerKey) async {
+    Map<String, dynamic>? record;
+    for (final raw in _list('records')) {
+      final row = raw as Map<String, dynamic>;
+      if (ciContainerKey(row) == containerKey) {
+        record = row;
+        break;
+      }
+    }
+
     setState(() {
       _selectedContainer = containerKey;
+      _selectedRecord = record;
       _selectedEvents = [];
     });
     try {
-      final events = await ContainerInventoryService.getContainerEvents(containerKey);
+      final events = await ContainerInventoryService.getContainerEvents(
+        containerKey,
+        demFreeDays: _query.demFreeDays,
+        detFreeDays: _query.detFreeDays,
+      );
       if (mounted) setState(() => _selectedEvents = events);
     } catch (_) {}
   }
@@ -160,6 +178,8 @@ class _InventoryScreenState extends State<InventoryScreen> {
                     _buildFilters(),
                     const SizedBox(height: 12),
                     _buildSummaryCards(),
+                    const SizedBox(height: 12),
+                    _buildInventoryLogicBanner(),
                     const SizedBox(height: 12),
                     _buildGroupTables(),
                     const SizedBox(height: 12),
@@ -306,8 +326,12 @@ class _InventoryScreenState extends State<InventoryScreen> {
               _query.statusFilter = v;
               _loadData();
             }),
-            _drop('F/E/D', _query.felFilter, const ['E', 'F', 'D'], (v) {
+            _drop('Load F/E', _query.felFilter, const ['E', 'F', 'OTHER'], (v) {
               _query.felFilter = v;
+              _loadData();
+            }),
+            _drop('Damage', _query.damageFilter, const ['D', 'OK'], (v) {
+              _query.damageFilter = v;
               _loadData();
             }),
             FilterChip(
@@ -387,6 +411,30 @@ class _InventoryScreenState extends State<InventoryScreen> {
               )),
         ],
         onChanged: onChanged,
+      ),
+    );
+  }
+
+  Widget _buildInventoryLogicBanner() {
+    return Card(
+      elevation: 0,
+      color: Colors.blue.shade50,
+      child: const Padding(
+        padding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Icon(Icons.info_outline, size: 18, color: Color(0xFF1565C0)),
+            SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                'Inventory logic: E/F/Other is the container load status. '
+                'D is a separate damage condition and may overlap E or F.',
+                style: TextStyle(fontSize: 12, color: Color(0xFF0D47A1)),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -488,8 +536,8 @@ class _InventoryScreenState extends State<InventoryScreen> {
                           DataColumn(label: Text('TOTAL')),
                           DataColumn(label: Text('E')),
                           DataColumn(label: Text('F')),
-                          DataColumn(label: Text('D')),
                           DataColumn(label: Text('Other')),
+                          DataColumn(label: Text('D')),
                         ],
                         rows: List.generate(rows.length, (i) {
                           final m = rows[i] as Map<String, dynamic>;
@@ -505,8 +553,8 @@ class _InventoryScreenState extends State<InventoryScreen> {
                               DataCell(Text('${m['containerCount'] ?? 0}')),
                               DataCell(Text('${m['emptyCount'] ?? 0}')),
                               DataCell(Text('${m['fullCount'] ?? 0}')),
+                              DataCell(Text('${m['otherLoadCount'] ?? m['otherFelCount'] ?? 0}')),
                               DataCell(Text('${m['damagedCount'] ?? 0}')),
-                              DataCell(Text('${m['otherFelCount'] ?? 0}')),
                             ],
                           );
                         }),
@@ -584,52 +632,13 @@ class _InventoryScreenState extends State<InventoryScreen> {
                         child: SingleChildScrollView(
                           controller: _detailHCtrl,
                           scrollDirection: Axis.horizontal,
-                          child: DataTable(
-                            headingRowHeight: 40,
-                            dataRowMinHeight: 36,
-                            dataRowMaxHeight: 44,
-                            headingRowColor: WidgetStatePropertyAll(
-                                ThemeColors.getPrimaryColor(context)
-                                    .withValues(alpha: 0.10)),
-                            columns: const [
-                              DataColumn(label: Text('DEPOT')),
-                              DataColumn(label: Text('Container')),
-                              DataColumn(label: Text('Status')),
-                              DataColumn(label: Text('IN/OUT')),
-                              DataColumn(label: Text('Size')),
-                              DataColumn(label: Text('F/E/D')),
-                              DataColumn(label: Text('Seal')),
-                            ],
-                            rows: List.generate(pageRows.length, (i) {
-                              final r = pageRows[i] as Map<String, dynamic>;
-                              final container =
-                                  '${r['itemNo'] ?? r['iteM_NO'] ?? r['ITEM_NO'] ?? ''}';
-                              final containerKey =
-                                  '${r['containerKey'] ?? container}';
-                              final selected = _selectedContainer == containerKey;
-                              return DataRow(
-                                selected: selected,
-                                color: selected
-                                    ? WidgetStatePropertyAll(
-                                        ThemeColors.getPrimaryColor(context)
-                                            .withValues(alpha: 0.18))
-                                    : (i.isEven
-                                        ? const WidgetStatePropertyAll(
-                                            Color(0xFFF7FAFC))
-                                        : null),
-                                onSelectChanged: (_) =>
-                                    _selectContainer(containerKey),
-                                cells: [
-                                  DataCell(Text('${r['depotDisplay'] ?? ''}')),
-                                  DataCell(Text(container)),
-                                  DataCell(Text('${r['status'] ?? ''}')),
-                                  DataCell(Text('${r['movementDisplay'] ?? ''}')),
-                                  DataCell(Text('${r['sizeType'] ?? ''}')),
-                                  DataCell(Text('${r['fel'] ?? ''}')),
-                                  DataCell(Text('${r['soseal'] ?? ''}')),
-                                ],
-                              );
-                            }),
+                          child: buildCiDataTable(
+                            columns: containerDetailColumns,
+                            rows: pageRows,
+                            headingColor: ThemeColors.getPrimaryColor(context)
+                                .withValues(alpha: 0.10),
+                            selectedKey: _selectedContainer,
+                            onRowTap: _selectContainer,
                           ),
                         ),
                       ),
@@ -721,7 +730,32 @@ class _InventoryScreenState extends State<InventoryScreen> {
     );
   }
 
+  Widget _miniCard(String caption, String value) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF8FBFF),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: const Color(0xFFDBEAFE)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(caption, style: const TextStyle(fontSize: 11, color: Colors.black54)),
+          const SizedBox(height: 4),
+          Text(value, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700)),
+        ],
+      ),
+    );
+  }
+
   Widget _buildEventSection() {
+    final record = _selectedRecord;
+    final itemNo = record != null
+        ? ciRecordValue(record, const CiColumn('', ['itemNo', 'iteM_NO', 'ITEM_NO']))
+        : _selectedContainer ?? '';
+
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(12),
@@ -733,59 +767,96 @@ class _InventoryScreenState extends State<InventoryScreen> {
                 const Icon(Icons.history, size: 18),
                 const SizedBox(width: 6),
                 Expanded(
-                  child: Text('EVENT HISTORY · $_selectedContainer',
-                      style: const TextStyle(fontWeight: FontWeight.bold)),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('Container Event Detail · $itemNo',
+                          style: const TextStyle(fontWeight: FontWeight.bold)),
+                      Text(
+                        'Events: ${_selectedEvents.length}',
+                        style: const TextStyle(fontSize: 11, color: Colors.black54),
+                      ),
+                    ],
+                  ),
+                ),
+                TextButton.icon(
+                  onPressed: () => setState(() => _showEventGrid = !_showEventGrid),
+                  icon: Icon(
+                    _showEventGrid ? Icons.visibility_off : Icons.visibility,
+                    size: 18,
+                  ),
+                  label: Text(_showEventGrid ? 'Hide' : 'Show'),
                 ),
                 IconButton(
                   tooltip: 'Close',
                   visualDensity: VisualDensity.compact,
                   onPressed: () => setState(() {
                     _selectedContainer = null;
+                    _selectedRecord = null;
                     _selectedEvents = [];
                   }),
                   icon: const Icon(Icons.close, size: 18),
                 ),
               ],
             ),
+            if (record != null) ...[
+              const SizedBox(height: 12),
+              LayoutBuilder(
+                builder: (context, c) {
+                  final cols = c.maxWidth > 700 ? 4 : 2;
+                  final cards = [
+                    _miniCard(
+                      'Container / Depot',
+                      '${ciRecordValue(record, const CiColumn('', ['itemNo', 'iteM_NO', 'ITEM_NO']))} / ${ciRecordValue(record, const CiColumn('', ['depotDisplay']))}',
+                    ),
+                    _miniCard(
+                      'Movement / Status',
+                      '${ciRecordValue(record, const CiColumn('', ['movementDisplay']))} / ${ciRecordValue(record, const CiColumn('', ['status']))}',
+                    ),
+                    _miniCard(
+                      'Bill / B/L / Seal',
+                      '${ciRecordValue(record, const CiColumn('', ['booK_NO', 'bookNo', 'BOOK_NO']))} / ${ciRecordValue(record, const CiColumn('', ['bilL_OF_LADING', 'billOfLading', 'BILL_OF_LADING']))} / ${ciRecordValue(record, const CiColumn('', ['soseal', 'SOSEAL']))}',
+                    ),
+                    _miniCard(
+                      'Location / Damage',
+                      '${ciRecordValue(record, const CiColumn('', ['currentLocationDisplay']))} / ${ciRecordValue(record, const CiColumn('', ['damageDisplay']))}',
+                    ),
+                  ];
+                  return Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: cards
+                        .map((w) => SizedBox(
+                              width: (c.maxWidth - (cols - 1) * 8) / cols,
+                              child: w,
+                            ))
+                        .toList(),
+                  );
+                },
+              ),
+            ],
             const Divider(height: 16),
-            if (_selectedEvents.isEmpty)
+            if (!_showEventGrid)
+              const Text('Event list is hidden. Click Show to display it again.',
+                  style: TextStyle(fontSize: 12, color: Colors.grey))
+            else if (_selectedEvents.isEmpty)
               const Padding(
                 padding: EdgeInsets.symmetric(vertical: 16),
                 child: Text('No events', style: TextStyle(color: Colors.grey)),
               )
             else
-              ConstrainedBox(
-                constraints: const BoxConstraints(maxHeight: 280),
+              SizedBox(
+                height: 300,
                 child: Scrollbar(
                   thumbVisibility: true,
                   child: SingleChildScrollView(
                     scrollDirection: Axis.vertical,
                     child: SingleChildScrollView(
                       scrollDirection: Axis.horizontal,
-                      child: DataTable(
-                        headingRowHeight: 38,
-                        dataRowMinHeight: 34,
-                        dataRowMaxHeight: 40,
-                        columns: const [
-                          DataColumn(label: Text('Source')),
-                          DataColumn(label: Text('Status')),
-                          DataColumn(label: Text('Method')),
-                          DataColumn(label: Text('Reason')),
-                        ],
-                        rows: List.generate(_selectedEvents.length, (i) {
-                          final r = _selectedEvents[i] as Map<String, dynamic>;
-                          return DataRow(
-                            color: i.isEven
-                                ? const WidgetStatePropertyAll(Color(0xFFF7FAFC))
-                                : null,
-                            cells: [
-                              DataCell(Text('${r['sourceTable'] ?? ''}')),
-                              DataCell(Text('${r['status'] ?? ''}')),
-                              DataCell(Text('${r['eventMethod'] ?? ''}')),
-                              DataCell(Text('${r['statusReason'] ?? ''}')),
-                            ],
-                          );
-                        }),
+                      child: buildCiDataTable(
+                        columns: containerEventColumns,
+                        rows: _selectedEvents,
+                        headingColor: Colors.blue.shade50,
                       ),
                     ),
                   ),

@@ -12,6 +12,7 @@ class ContainerInventoryService {
     String? sizeFilter,
     String? statusFilter,
     String? felFilter,
+    String? damageFilter,
     int? minDemDaysFilter,
     int? minDetDaysFilter,
     bool excludeDamaged = false,
@@ -35,6 +36,7 @@ class ContainerInventoryService {
     add('sizeFilter', sizeFilter);
     add('statusFilter', statusFilter);
     add('felFilter', felFilter);
+    add('damageFilter', damageFilter);
     if (minDemDaysFilter != null) params['minDemDaysFilter'] = '$minDemDaysFilter';
     if (minDetDaysFilter != null) params['minDetDaysFilter'] = '$minDetDaysFilter';
 
@@ -48,10 +50,20 @@ class ContainerInventoryService {
     return (body['data'] as Map<String, dynamic>?) ?? {};
   }
 
-  static Future<List<dynamic>> getContainerEvents(String containerKey) async {
+  static Future<List<dynamic>> getContainerEvents(
+    String containerKey, {
+    int demFreeDays = 0,
+    int detFreeDays = 0,
+  }) async {
     final encoded = Uri.encodeComponent(containerKey);
+    final uri = Uri.parse('$apiBase/api/ContainerInventory/events/$encoded').replace(
+      queryParameters: {
+        'demFreeDays': '$demFreeDays',
+        'detFreeDays': '$detFreeDays',
+      },
+    );
     final response = await HttpService.get(
-      '$apiBase/api/ContainerInventory/events/$encoded',
+      uri.toString(),
       timeout: const Duration(seconds: 60),
     );
     if (!HttpService.isSuccess(response)) {
@@ -87,6 +99,7 @@ class ContainerInventoryQuery {
   String? sizeFilter;
   String? statusFilter;
   String? felFilter;
+  String? damageFilter;
   int? minDemDaysFilter;
   int? minDetDaysFilter;
   bool excludeDamaged = false;
@@ -105,6 +118,7 @@ class ContainerInventoryQuery {
         if (sizeFilter != null && sizeFilter!.isNotEmpty) 'sizeFilter': sizeFilter!,
         if (statusFilter != null && statusFilter!.isNotEmpty) 'statusFilter': statusFilter!,
         if (felFilter != null && felFilter!.isNotEmpty) 'felFilter': felFilter!,
+        if (damageFilter != null && damageFilter!.isNotEmpty) 'damageFilter': damageFilter!,
         if (minDemDaysFilter != null) 'minDemDaysFilter': '$minDemDaysFilter',
         if (minDetDaysFilter != null) 'minDetDaysFilter': '$minDetDaysFilter',
       };
