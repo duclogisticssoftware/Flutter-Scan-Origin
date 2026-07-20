@@ -6,6 +6,7 @@ import 'package:qrscan_app/views/shared/sidebar_navigation.dart';
 import 'package:qrscan_app/views/shared/auth_shell.dart';
 import 'package:qrscan_app/services/app_session.dart';
 import 'package:qrscan_app/services/auth_service.dart';
+import 'package:qrscan_app/services/tenant_login_qr_service.dart';
 import 'package:qrscan_app/utils/theme_colors.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -125,11 +126,11 @@ class _LoginScreenState extends State<LoginScreen> {
   Future<void> _openQrLogin() async {
     if (_loading) return;
 
-    final qrToken = await Navigator.of(context).push<String>(
+    final qrRaw = await Navigator.of(context).push<String>(
       MaterialPageRoute(builder: (_) => const _QrLoginScannerScreen()),
     );
 
-    if (!mounted || qrToken == null || qrToken.isEmpty) {
+    if (!mounted || qrRaw == null || qrRaw.isEmpty) {
       return;
     }
 
@@ -139,37 +140,24 @@ class _LoginScreenState extends State<LoginScreen> {
     });
 
     try {
-      await AuthService.loginByQr(qrToken);
-
+      // Giống web: QR → lấy 5 thuộc tính → điền form → login (Scan + NVOAMASIS)
+      final creds = await TenantLoginQrService.resolve(qrRaw);
       if (!mounted) return;
 
-      // QR chỉ tạo phiên ScanApi — không có đủ credential cho NVOAMASIS.
-      await showDialog<void>(
-        context: context,
-        builder: (ctx) => AlertDialog(
-          title: const Text('Cần đăng nhập đủ form'),
-          content: const Text(
-            'Đăng nhập QR chỉ vào được phần Scan.\n\n'
-            'Thông báo duyệt phiếu cần login đủ 5 ô (giống web). '
-            'Vui lòng đăng nhập bằng form.',
-          ),
-          actions: [
-            FilledButton(
-              onPressed: () => Navigator.pop(ctx),
-              child: const Text('OK'),
-            ),
-          ],
-        ),
-      );
+      setState(() {
+        _databaseName.text = creds.databaseName;
+        _sqlUserId.text = creds.sqlUserId;
+        _sqlPassword.text = creds.sqlPassword;
+        _appUserName.text = creds.appUserName;
+        _appPassword.text = creds.appPassword;
+        _loading = false;
+      });
+
+      await _login();
     } catch (e) {
       if (mounted) {
         setState(() {
           _error = e.toString().replaceFirst('Exception: ', '');
-        });
-      }
-    } finally {
-      if (mounted) {
-        setState(() {
           _loading = false;
         });
       }
@@ -471,7 +459,7 @@ class _QrLoginScannerScreenState extends State<_QrLoginScannerScreen> {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 Text(
-                  'Quét mã QR đăng nhập hoặc dán token thủ công.',
+                  'Quét mã QR đăng nhập (điền 5 ô giống web) hoặc dán token / JSON.',
                   style: ThemeColors.getHintStyle(context),
                 ),
                 const SizedBox(height: 12),

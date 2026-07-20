@@ -34,7 +34,7 @@ class NotificationInboxController extends ChangeNotifier {
             'Host: $mobileApiBase\n'
             'Thiếu JWT mobile trên máy.\n'
             'Đóng app → mở lại sẽ về màn Login nếu thiếu phiên.\n'
-            'Login đủ 5 ô (giống web), không dùng QR.';
+            'Login form hoặc quét QR (sẽ điền 5 ô rồi đăng nhập).';
         debugPrint('[Inbox] no mobile JWT. host=$mobileApiBase');
         return;
       }
