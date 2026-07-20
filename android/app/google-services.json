@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "171373076136",
+    "project_id": "lms-qrscan",
+    "storage_bucket": "lms-qrscan.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:171373076136:android:2dd402ef3c208c770eac9d",
+        "android_client_info": {
+          "package_name": "com.vinalink.qrscan"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBNXW5TC1hcVAGGaTFEKQECjD7rNPOWP2M"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

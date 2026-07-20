@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'package:qrscan_app/config/app_config.dart';
 import 'package:qrscan_app/models/app_notification.dart';
 import 'package:qrscan_app/services/mobile_auth_service.dart';
 import 'package:qrscan_app/services/notification_api_service.dart';
@@ -10,18 +11,31 @@ class NotificationInboxController extends ChangeNotifier {
   bool loading = false;
   String? error;
   bool mobileSessionReady = false;
+  String? mobileDatabaseName;
+  String? statusHint;
 
   Future<void> refresh({bool unreadOnly = false}) async {
     loading = true;
     error = null;
+    statusHint = null;
     notifyListeners();
 
     try {
-      mobileSessionReady = await MobileAuthService.isAuthenticated();
+      final token = await MobileAuthService.getAccessToken();
+      mobileDatabaseName = await MobileAuthService.getDatabaseName();
+      mobileSessionReady =
+          token != null && token.isNotEmpty && await MobileAuthService.me();
+
       if (!mobileSessionReady) {
         unreadCount = 0;
         items = const [];
-        error = 'Chưa đăng nhập phiên duyệt phiếu (NVOAMASIS).';
+        error =
+            'Chưa có phiên NVOAMASIS — không tải được thông báo duyệt phiếu.';
+        statusHint =
+            'Host: $mobileApiBase\n'
+            'Hãy Logout → Login lại (cùng thông tin web). '
+            'Nếu vẫn lỗi, kiểm tra databaseName / user có quyền duyệt trên web.';
+        debugPrint('[Inbox] no mobile session. host=$mobileApiBase');
         return;
       }
 
@@ -31,8 +45,20 @@ class NotificationInboxController extends ChangeNotifier {
       );
       unreadCount = result.unreadCount;
       items = result.items;
+      if (items.isEmpty) {
+        statusHint =
+            'Đã kết nối NVOAMASIS'
+            '${mobileDatabaseName != null ? ' (DB: $mobileDatabaseName)' : ''}, '
+            'nhưng chưa có message. Trên web tạo yêu cầu duyệt gửi đúng user này.';
+      }
+      debugPrint(
+        '[Inbox] ok unread=$unreadCount items=${items.length} '
+        'db=$mobileDatabaseName host=$mobileApiBase',
+      );
     } catch (e) {
       error = e.toString().replaceFirst('Exception: ', '');
+      statusHint = 'Host: $mobileApiBase';
+      debugPrint('[Inbox] error: $error');
     } finally {
       loading = false;
       notifyListeners();

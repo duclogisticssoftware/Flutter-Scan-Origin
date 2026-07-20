@@ -3,10 +3,11 @@ import 'package:qrscan_app/services/auth_service.dart';
 import 'package:qrscan_app/services/background_notification_service.dart';
 import 'package:qrscan_app/services/fcm_service.dart';
 import 'package:qrscan_app/services/mobile_auth_service.dart';
+import 'package:qrscan_app/services/notification_poll_service.dart';
 import 'package:qrscan_app/services/push_notification_service.dart';
 
 class AppSession {
-  /// Login NVOAMASIS + bật nhận thông báo nền (giữ session đến khi logout).
+  /// Login NVOAMASIS + bật nhận thông báo (FCM nếu có + poll local).
   static Future<String?> connectMobileAndNotifications({
     required String databaseName,
     required String sqlUserId,
@@ -40,12 +41,20 @@ class AppSession {
 
   static Future<void> _startNotifications() async {
     await PushNotificationService.instance.init();
-    await FcmService.instance.init();
-    await FcmService.instance.registerToken();
+
+    final fcmOk = await FcmService.instance.init();
+    if (fcmOk) {
+      await FcmService.instance.registerToken();
+    } else {
+      debugPrint('[AppSession] FCM off → local poll notifications');
+    }
+
     await BackgroundNotificationService.start();
+    await NotificationPollService.instance.start();
   }
 
   static Future<void> logout() async {
+    NotificationPollService.instance.stop();
     try {
       await PushNotificationService.instance.unregisterDeviceToken();
     } catch (_) {}

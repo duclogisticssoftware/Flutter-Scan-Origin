@@ -1,3 +1,5 @@
+import 'package:qrscan_app/utils/vn_datetime.dart';
+
 class AppNotification {
   final String id;
   final String? senderUserId;
@@ -22,28 +24,44 @@ class AppNotification {
   });
 
   factory AppNotification.fromJson(Map<String, dynamic> json) {
-    final message = (json['message'] as String?) ?? '';
+    final message =
+        (json['message'] ?? json['Message'])?.toString() ?? '';
     final parsed = _parsePhieuApproveMessage(message);
 
-    final isPhieuApprove =
-        json['isPhieuApprove'] == true || parsed != null;
-    final phieuLoai =
-        (json['phieuLoai'] as String?) ?? parsed?.loai;
-    final phieuToken =
-        (json['phieuToken'] as String?) ?? parsed?.token;
+    final isPhieuApprove = _asBool(
+          json['isPhieuApprove'] ?? json['IsPhieuApprove'],
+        ) ||
+        parsed != null;
+    final phieuLoai = (json['phieuLoai'] ?? json['PhieuLoai'])?.toString() ??
+        parsed?.loai;
+    final rawToken = json['phieuToken'] ?? json['PhieuToken'];
+    final phieuToken = rawToken?.toString().trim().isNotEmpty == true
+        ? rawToken.toString().trim()
+        : parsed?.token;
 
     return AppNotification(
-      id: (json['id'] ?? '').toString(),
-      senderUserId: json['senderUserId']?.toString(),
-      receiverUserId: json['receiverUserId']?.toString(),
+      id: (json['id'] ?? json['Id'] ?? '').toString(),
+      senderUserId:
+          (json['senderUserId'] ?? json['SenderUserId'])?.toString(),
+      receiverUserId:
+          (json['receiverUserId'] ?? json['ReceiverUserId'])?.toString(),
       message: message,
-      createdAt: DateTime.tryParse(json['createdAt']?.toString() ?? '') ??
+      createdAt: VnDateTime.parseApi(
+            (json['createdAt'] ?? json['CreatedAt'])?.toString(),
+          ) ??
           DateTime.now().toUtc(),
-      isRead: json['isRead'] == true,
+      isRead: _asBool(json['isRead'] ?? json['IsRead']),
       isPhieuApprove: isPhieuApprove,
       phieuLoai: phieuLoai,
       phieuToken: phieuToken,
     );
+  }
+
+  static bool _asBool(dynamic value) {
+    if (value is bool) return value;
+    if (value is num) return value != 0;
+    final s = value?.toString().trim().toLowerCase();
+    return s == 'true' || s == '1' || s == 'yes';
   }
 
   String get displayTitle {

@@ -16,8 +16,8 @@ class PushNotificationService {
   PushNotificationService._();
   static final PushNotificationService instance = PushNotificationService._();
 
-  static const _channelId = 'phieu_approve_channel';
-  static const _channelName = 'Duyệt phiếu thu/chi';
+  static const channelId = 'phieu_approve_channel';
+  static const channelName = 'Duyệt phiếu thu/chi';
   static const _seenIdsKey = 'notif_seen_ids';
 
   final FlutterLocalNotificationsPlugin _local =
@@ -45,8 +45,8 @@ class PushNotificationService {
         AndroidFlutterLocalNotificationsPlugin>();
     await androidPlugin?.createNotificationChannel(
       const AndroidNotificationChannel(
-        _channelId,
-        _channelName,
+        channelId,
+        channelName,
         description: 'Thông báo yêu cầu duyệt phiếu thu/chi',
         importance: Importance.high,
       ),
@@ -100,8 +100,8 @@ class PushNotificationService {
       body,
       const NotificationDetails(
         android: AndroidNotificationDetails(
-          _channelId,
-          _channelName,
+          channelId,
+          channelName,
           channelDescription: 'Thông báo yêu cầu duyệt phiếu thu/chi',
           importance: Importance.high,
           priority: Priority.high,
@@ -148,6 +148,8 @@ class PushNotificationService {
       debugPrint(
         '[Push] register token failed: ${MobileHttpService.getErrorMessage(response)}',
       );
+    } else {
+      debugPrint('[Push] registered device token with backend');
     }
   }
 

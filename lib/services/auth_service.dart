@@ -54,7 +54,14 @@ class AuthService {
           )
           .timeout(const Duration(seconds: 10));
 
-      return response.statusCode == 200;
+      // 200 = hợp lệ. 401/403 = hết hạn.
+      // 404 = endpoint/session lookup lỗi phía server — giữ session offline
+      // (tránh logout oan khi middleware ScanApi lỗi tenant session).
+      if (response.statusCode == 200) return true;
+      if (response.statusCode == 401 || response.statusCode == 403) {
+        return false;
+      }
+      return true;
     } catch (e) {
       // Nếu không kết nối được server, coi như token vẫn hợp lệ
       // (để tránh logout khi mất mạng tạm thời)

@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:qrscan_app/config/app_config.dart';
 import 'package:qrscan_app/models/mobile_auth_models.dart';
@@ -21,9 +22,10 @@ class MobileAuthService {
     required String appUserName,
     required String appPassword,
   }) async {
+    final loginUrl = '$mobileApiBase/api/mobile/auth/login';
     final response = await http
         .post(
-          Uri.parse('$mobileApiBase/api/mobile/auth/login'),
+          Uri.parse(loginUrl),
           headers: {
             'Content-Type': 'application/json',
             'Accept': 'application/json',
@@ -38,6 +40,11 @@ class MobileAuthService {
           }),
         )
         .timeout(const Duration(seconds: 20));
+
+    debugPrint(
+      '[MobileAuth] POST $loginUrl → HTTP ${response.statusCode}, '
+      'body=${response.body.length > 200 ? response.body.substring(0, 200) : response.body}',
+    );
 
     final data = _tryDecode(response.body);
     if (data == null) {

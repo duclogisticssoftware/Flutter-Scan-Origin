@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:qrscan_app/models/app_notification.dart';
 import 'package:qrscan_app/services/notification_inbox_controller.dart';
 import 'package:qrscan_app/utils/theme_colors.dart';
+import 'package:qrscan_app/utils/vn_datetime.dart';
 import 'package:qrscan_app/views/Notifications/phieu_approve_page.dart';
 
 class NotificationsScreen extends StatefulWidget {
@@ -119,6 +120,15 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                               textAlign: TextAlign.center,
                               style: ThemeColors.getCardSubtitleStyle(context),
                             ),
+                            if (inbox.statusHint != null) ...[
+                              const SizedBox(height: 12),
+                              Text(
+                                inbox.statusHint!,
+                                textAlign: TextAlign.center,
+                                style: ThemeColors.getCardSubtitleStyle(context)
+                                    .copyWith(fontSize: 12),
+                              ),
+                            ],
                             const SizedBox(height: 16),
                             FilledButton(
                               onPressed: () => inbox.refresh(),
@@ -132,9 +142,26 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                 else if (inbox.items.isEmpty)
                   SliverFillRemaining(
                     child: Center(
-                      child: Text(
-                        'Không có thông báo',
-                        style: ThemeColors.getCardSubtitleStyle(context),
+                      child: Padding(
+                        padding: const EdgeInsets.all(24),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              'Không có thông báo',
+                              style: ThemeColors.getCardSubtitleStyle(context),
+                            ),
+                            if (inbox.statusHint != null) ...[
+                              const SizedBox(height: 12),
+                              Text(
+                                inbox.statusHint!,
+                                textAlign: TextAlign.center,
+                                style: ThemeColors.getCardSubtitleStyle(context)
+                                    .copyWith(fontSize: 12),
+                              ),
+                            ],
+                          ],
+                        ),
                       ),
                     ),
                   )
@@ -168,10 +195,7 @@ class _NotificationTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final time = item.createdAt.toLocal();
-    final timeText =
-        '${time.day.toString().padLeft(2, '0')}/${time.month.toString().padLeft(2, '0')} '
-        '${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}';
+    final timeText = VnDateTime.format(item.createdAt);
 
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),

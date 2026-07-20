@@ -51,8 +51,10 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
     super.didChangeAppLifecycleState(state);
 
     if (state == AppLifecycleState.resumed) {
-      // App quay lại foreground: sync thông báo nếu còn session
       AppSession.restoreNotificationsIfLoggedIn();
+    } else if (state == AppLifecycleState.paused) {
+      // App vào nền: sync một lần để hiện local notification sớm hơn WorkManager
+      BackgroundNotificationService.syncOnce();
     } else if (state == AppLifecycleState.detached) {
       LocationTrackingService().onAppClose();
     }

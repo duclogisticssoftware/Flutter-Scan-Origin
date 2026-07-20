@@ -3,6 +3,7 @@ import 'package:flutter_html/flutter_html.dart';
 import 'package:qrscan_app/models/phieu_approve_detail.dart';
 import 'package:qrscan_app/services/phieu_approve_service.dart';
 import 'package:qrscan_app/utils/theme_colors.dart';
+import 'package:qrscan_app/utils/vn_datetime.dart';
 
 class PhieuApprovePage extends StatefulWidget {
   final String phieuToken;
@@ -15,6 +16,7 @@ class PhieuApprovePage extends StatefulWidget {
 
 class _PhieuApprovePageState extends State<PhieuApprovePage> {
   final _remarksController = TextEditingController();
+  final _scaffoldKey = GlobalKey<ScaffoldState>();
   PhieuApproveDetail? _detail;
   bool _loading = true;
   bool _submitting = false;
@@ -38,12 +40,13 @@ class _PhieuApprovePageState extends State<PhieuApprovePage> {
       _error = null;
     });
     try {
-      final detail =
-          await PhieuApproveService.getDetail(widget.phieuToken);
+      final detail = await PhieuApproveService.getDetail(widget.phieuToken);
       if (!mounted) return;
       setState(() {
         _detail = detail;
-        _remarksController.text = detail.remarks ?? '';
+        if (detail.remarks != null && detail.remarks!.isNotEmpty) {
+          _remarksController.text = detail.remarks!;
+        }
       });
     } catch (e) {
       if (!mounted) return;
@@ -55,16 +58,41 @@ class _PhieuApprovePageState extends State<PhieuApprovePage> {
     }
   }
 
+  Future<void> _showMessage(String message, {bool isError = false}) async {
+    if (!mounted) return;
+    await showDialog<void>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(isError ? 'Không duyệt được' : 'Thành công'),
+        content: Text(message),
+        actions: [
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('OK'),
+          ),
+        ],
+      ),
+    );
+  }
+
   Future<void> _decide(bool approve) async {
     final detail = _detail;
     if (detail == null || _submitting) return;
 
+    if (!detail.showActionButtons) {
+      await _showMessage(
+        detail.alreadyDecided
+            ? 'Phiếu đã được quyết định, không duyệt thêm được.'
+            : 'Bạn không có quyền duyệt phiếu này.',
+        isError: true,
+      );
+      return;
+    }
+
     if (!approve) {
       final remarks = _remarksController.text.trim();
       if (remarks.isEmpty) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Deny bắt buộc nhập lý do (remarks)')),
-        );
+        await _showMessage('Deny bắt buộc nhập lý do (remarks).', isError: true);
         return;
       }
     }
@@ -90,7 +118,7 @@ class _PhieuApprovePageState extends State<PhieuApprovePage> {
         ],
       ),
     );
-    if (confirm != true) return;
+    if (confirm != true || !mounted) return;
 
     setState(() => _submitting = true);
     try {
@@ -100,17 +128,17 @@ class _PhieuApprovePageState extends State<PhieuApprovePage> {
         remarks: approve ? null : _remarksController.text.trim(),
       );
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(result.message)),
+      await _showMessage(
+        result.message.isNotEmpty
+            ? result.message
+            : (approve ? 'Đã Approve.' : 'Đã Deny.'),
       );
       await _load();
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(e.toString().replaceFirst('Exception: ', '')),
-          backgroundColor: Colors.red[700],
-        ),
+      await _showMessage(
+        e.toString().replaceFirst('Exception: ', ''),
+        isError: true,
       );
       await _load();
     } finally {
@@ -126,6 +154,7 @@ class _PhieuApprovePageState extends State<PhieuApprovePage> {
         : 'Duyệt ${detail.loaiLabel}${detail.soPhieu != null ? ' · ${detail.soPhieu}' : ''}';
 
     return Scaffold(
+      key: _scaffoldKey,
       appBar: AppBar(
         title: Text(title),
         backgroundColor: const Color(0xFFFF6B35),
@@ -139,14 +168,32 @@ class _PhieuApprovePageState extends State<PhieuApprovePage> {
       ),
       body: _loading
           ? const Center(child: CircularProgressIndicator())
-          : _error != null
+              : _error != null
               ? Center(
                   child: Padding(
                     padding: const EdgeInsets.all(24),
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Text(_error!, textAlign: TextAlign.center),
+                        Icon(
+                          Icons.error_outline,
+                          size: 48,
+                          color: Colors.red[700],
+                        ),
+                        const SizedBox(height: 12),
+                        Text(
+                          _error!,
+                          textAlign: TextAlign.center,
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          'Token: ${widget.phieuToken}',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: Colors.grey[600],
+                          ),
+                        ),
                         const SizedBox(height: 16),
                         FilledButton(
                           onPressed: _load,
@@ -183,27 +230,26 @@ class _PhieuApprovePageState extends State<PhieuApprovePage> {
                                       : Html(data: detail.detailHtml),
                                 ),
                               ),
-                              if (detail.canDecide && !detail.alreadyDecided) ...[
-                                const SizedBox(height: 16),
-                                Text(
-                                  'Ghi chú / Lý do Deny',
-                                  style: ThemeColors.getCardTitleStyle(context),
+                              const SizedBox(height: 16),
+                              Text(
+                                'Ghi chú / Lý do Deny',
+                                style: ThemeColors.getCardTitleStyle(context),
+                              ),
+                              const SizedBox(height: 8),
+                              TextField(
+                                controller: _remarksController,
+                                maxLines: 3,
+                                enabled:
+                                    !_submitting && detail.showActionButtons,
+                                decoration: const InputDecoration(
+                                  border: OutlineInputBorder(),
+                                  hintText:
+                                      'Bắt buộc khi Deny (vd: Sai số tiền)',
                                 ),
-                                const SizedBox(height: 8),
-                                TextField(
-                                  controller: _remarksController,
-                                  maxLines: 3,
-                                  enabled: !_submitting,
-                                  decoration: const InputDecoration(
-                                    border: OutlineInputBorder(),
-                                    hintText:
-                                        'Bắt buộc khi Deny (vd: Sai số tiền)',
-                                  ),
-                                ),
-                              ],
+                              ),
                               if (detail.alreadyDecided &&
                                   (detail.remarks?.isNotEmpty ?? false)) ...[
-                                const SizedBox(height: 16),
+                                const SizedBox(height: 12),
                                 Text(
                                   'Remarks: ${detail.remarks}',
                                   style: ThemeColors.getCardSubtitleStyle(
@@ -214,56 +260,67 @@ class _PhieuApprovePageState extends State<PhieuApprovePage> {
                             ],
                           ),
                         ),
-                        if (detail.canDecide && !detail.alreadyDecided)
-                          SafeArea(
-                            child: Padding(
-                              padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-                              child: Row(
-                                children: [
-                                  Expanded(
-                                    child: ElevatedButton(
-                                      onPressed: _submitting
-                                          ? null
-                                          : () => _decide(false),
-                                      style: ElevatedButton.styleFrom(
-                                        backgroundColor: Colors.red[700],
-                                        foregroundColor: Colors.white,
-                                        padding: const EdgeInsets.symmetric(
-                                          vertical: 14,
+                        SafeArea(
+                          child: Padding(
+                            padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+                            child: detail.showActionButtons
+                                ? Row(
+                                    children: [
+                                      Expanded(
+                                        child: ElevatedButton(
+                                          onPressed: _submitting
+                                              ? null
+                                              : () => _decide(false),
+                                          style: ElevatedButton.styleFrom(
+                                            backgroundColor: Colors.red[700],
+                                            foregroundColor: Colors.white,
+                                            padding: const EdgeInsets.symmetric(
+                                              vertical: 14,
+                                            ),
+                                          ),
+                                          child: const Text('Deny'),
                                         ),
                                       ),
-                                      child: const Text('Deny'),
-                                    ),
-                                  ),
-                                  const SizedBox(width: 12),
-                                  Expanded(
-                                    child: ElevatedButton(
-                                      onPressed: _submitting
-                                          ? null
-                                          : () => _decide(true),
-                                      style: ElevatedButton.styleFrom(
-                                        backgroundColor: Colors.green[700],
-                                        foregroundColor: Colors.white,
-                                        padding: const EdgeInsets.symmetric(
-                                          vertical: 14,
+                                      const SizedBox(width: 12),
+                                      Expanded(
+                                        child: ElevatedButton(
+                                          onPressed: _submitting
+                                              ? null
+                                              : () => _decide(true),
+                                          style: ElevatedButton.styleFrom(
+                                            backgroundColor: Colors.green[700],
+                                            foregroundColor: Colors.white,
+                                            padding: const EdgeInsets.symmetric(
+                                              vertical: 14,
+                                            ),
+                                          ),
+                                          child: _submitting
+                                              ? const SizedBox(
+                                                  width: 20,
+                                                  height: 20,
+                                                  child:
+                                                      CircularProgressIndicator(
+                                                    strokeWidth: 2,
+                                                    color: Colors.white,
+                                                  ),
+                                                )
+                                              : const Text('Approve'),
                                         ),
                                       ),
-                                      child: _submitting
-                                          ? const SizedBox(
-                                              width: 20,
-                                              height: 20,
-                                              child: CircularProgressIndicator(
-                                                strokeWidth: 2,
-                                                color: Colors.white,
-                                              ),
-                                            )
-                                          : const Text('Approve'),
+                                    ],
+                                  )
+                                : Text(
+                                    detail.alreadyDecided
+                                        ? 'Phiếu đã quyết định — không còn nút Approve/Deny.'
+                                        : 'Không có quyền duyệt phiếu này.',
+                                    textAlign: TextAlign.center,
+                                    style: TextStyle(
+                                      color: Colors.grey[700],
+                                      fontWeight: FontWeight.w600,
                                     ),
                                   ),
-                                ],
-                              ),
-                            ),
                           ),
+                        ),
                       ],
                     ),
     );
@@ -289,6 +346,9 @@ class _StatusBanner extends StatelessWidget {
       text = detail.statusLabel;
       if (detail.approveBy != null && detail.approveBy!.isNotEmpty) {
         text = '$text bởi ${detail.approveBy}';
+      }
+      if (detail.approveDate != null) {
+        text = '$text · ${VnDateTime.format(detail.approveDate)}';
       }
     } else if (!detail.canDecide) {
       bg = Colors.orange.withOpacity(0.15);

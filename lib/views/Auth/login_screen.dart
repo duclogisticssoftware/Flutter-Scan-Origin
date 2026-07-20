@@ -83,7 +83,7 @@ class _LoginScreenState extends State<LoginScreen> {
         appPassword: appPassword,
       );
 
-      // Đồng bộ phiên NVOAMASIS để nhận thông báo / duyệt phiếu
+      // Đồng bộ phiên NVOAMASIS — bắt buộc để có thông báo / duyệt phiếu
       final mobileError = await AppSession.connectMobileAndNotifications(
         databaseName: databaseName,
         sqlUserId: sqlUserId,
@@ -92,17 +92,41 @@ class _LoginScreenState extends State<LoginScreen> {
         appPassword: appPassword,
       );
 
-      if (mounted) {
-        if (mobileError != null) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                'Đăng nhập scan OK. Thông báo/duyệt phiếu chưa kết nối: $mobileError',
-              ),
-              duration: const Duration(seconds: 5),
+      if (!mounted) return;
+
+      if (mobileError != null) {
+        final continueScanOnly = await showDialog<bool>(
+          context: context,
+          builder: (ctx) => AlertDialog(
+            title: const Text('Chưa kết nối duyệt phiếu'),
+            content: Text(
+              'Đăng nhập Scan OK nhưng phiên NVOAMASIS thất bại:\n\n'
+              '$mobileError\n\n'
+              'Không có phiên này thì app sẽ không hiện thông báo duyệt phiếu thu/chi.\n'
+              'Chọn "Thử lại" để sửa thông tin login, hoặc vào app chỉ dùng Scan.',
             ),
-          );
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx, false),
+                child: const Text('Thử lại'),
+              ),
+              FilledButton(
+                onPressed: () => Navigator.pop(ctx, true),
+                child: const Text('Vào app (chỉ Scan)'),
+              ),
+            ],
+          ),
+        );
+        if (continueScanOnly != true) {
+          setState(() {
+            _error = mobileError;
+            _loading = false;
+          });
+          return;
         }
+      }
+
+      if (mounted) {
         Navigator.of(context).pushAndRemoveUntil(
           MaterialPageRoute(builder: (_) => const SidebarNavigation()),
           (route) => false,
