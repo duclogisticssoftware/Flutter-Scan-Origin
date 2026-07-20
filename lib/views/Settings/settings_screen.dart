@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:qrscan_app/services/theme_service.dart';
-import 'package:qrscan_app/services/auth_service.dart';
-import 'package:qrscan_app/utils/theme_colors.dart';
 import 'package:provider/provider.dart';
+import 'package:qrscan_app/services/app_session.dart';
+import 'package:qrscan_app/services/theme_service.dart';
+import 'package:qrscan_app/utils/theme_colors.dart';
+import 'package:qrscan_app/views/Auth/login_screen.dart';
+import 'package:qrscan_app/views/Notifications/notifications_screen.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -33,12 +35,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
 
     if (shouldLogout == true) {
-      // Clear stored token using AuthService
-      await AuthService.logout();
+      await AppSession.logout();
 
-      // Navigate back to login screen
       if (context.mounted) {
-        Navigator.of(context).pushNamedAndRemoveUntil('/', (route) => false);
+        Navigator.of(context).pushAndRemoveUntil(
+          MaterialPageRoute(builder: (_) => const LoginScreen()),
+          (route) => false,
+        );
       }
     }
   }
@@ -150,10 +153,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     color: ThemeColors.getHintColor(context),
                   ),
                   onTap: () {
-                    // TODO: Navigate to notifications settings
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Notifications feature coming soon'),
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) => const NotificationsScreen(),
                       ),
                     );
                   },

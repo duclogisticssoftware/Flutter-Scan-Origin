@@ -4,6 +4,7 @@ import 'package:qrscan_app/views/Auth/register_screen.dart';
 import 'package:qrscan_app/views/Auth/forgot_password_screen.dart';
 import 'package:qrscan_app/views/shared/sidebar_navigation.dart';
 import 'package:qrscan_app/views/shared/auth_shell.dart';
+import 'package:qrscan_app/services/app_session.dart';
 import 'package:qrscan_app/services/auth_service.dart';
 import 'package:qrscan_app/utils/theme_colors.dart';
 
@@ -68,15 +69,40 @@ class _LoginScreenState extends State<LoginScreen> {
     });
 
     try {
+      final databaseName = _databaseName.text.trim();
+      final sqlUserId = _sqlUserId.text.trim();
+      final sqlPassword = _sqlPassword.text;
+      final appUserName = _appUserName.text.trim();
+      final appPassword = _appPassword.text;
+
       await AuthService.loginTenant(
-        databaseName: _databaseName.text.trim(),
-        sqlUserId: _sqlUserId.text.trim(),
-        sqlPassword: _sqlPassword.text,
-        appUserName: _appUserName.text.trim(),
-        appPassword: _appPassword.text,
+        databaseName: databaseName,
+        sqlUserId: sqlUserId,
+        sqlPassword: sqlPassword,
+        appUserName: appUserName,
+        appPassword: appPassword,
+      );
+
+      // Đồng bộ phiên NVOAMASIS để nhận thông báo / duyệt phiếu
+      final mobileError = await AppSession.connectMobileAndNotifications(
+        databaseName: databaseName,
+        sqlUserId: sqlUserId,
+        sqlPassword: sqlPassword,
+        appUserName: appUserName,
+        appPassword: appPassword,
       );
 
       if (mounted) {
+        if (mobileError != null) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                'Đăng nhập scan OK. Thông báo/duyệt phiếu chưa kết nối: $mobileError',
+              ),
+              duration: const Duration(seconds: 5),
+            ),
+          );
+        }
         Navigator.of(context).pushAndRemoveUntil(
           MaterialPageRoute(builder: (_) => const SidebarNavigation()),
           (route) => false,

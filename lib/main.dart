@@ -1,18 +1,23 @@
 import 'package:flutter/material.dart';
-import 'package:qrscan_app/views/shared/sidebar_navigation.dart';
-import 'package:qrscan_app/views/Auth/login_screen.dart';
-import 'package:qrscan_app/services/auth_service.dart';
-import 'package:qrscan_app/services/theme_service.dart';
-import 'package:qrscan_app/services/location_tracking_service.dart';
 import 'package:provider/provider.dart';
+import 'package:qrscan_app/navigation/app_navigator.dart';
+import 'package:qrscan_app/services/auth_service.dart';
+import 'package:qrscan_app/services/background_notification_service.dart';
+import 'package:qrscan_app/services/app_session.dart';
+import 'package:qrscan_app/services/location_tracking_service.dart';
+import 'package:qrscan_app/services/notification_inbox_controller.dart';
+import 'package:qrscan_app/services/push_notification_service.dart';
+import 'package:qrscan_app/services/theme_service.dart';
+import 'package:qrscan_app/views/Auth/login_screen.dart';
+import 'package:qrscan_app/views/shared/sidebar_navigation.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   try {
     await ThemeService.init();
-
-    // Khôi phục trạng thái tracking nếu có
+    await PushNotificationService.instance.init();
+    await BackgroundNotificationService.init();
     await LocationTrackingService().restoreTrackingState();
   } catch (e) {
     debugPrint('Error initializing app: $e');
@@ -45,20 +50,26 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
   void didChangeAppLifecycleState(AppLifecycleState state) {
     super.didChangeAppLifecycleState(state);
 
-    if (state == AppLifecycleState.detached) {
-      // App bị đóng hoàn toàn
+    if (state == AppLifecycleState.resumed) {
+      // App quay lại foreground: sync thông báo nếu còn session
+      AppSession.restoreNotificationsIfLoggedIn();
+    } else if (state == AppLifecycleState.detached) {
       LocationTrackingService().onAppClose();
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    return ChangeNotifierProvider(
-      create: (context) => ThemeService.instance,
+    return MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => ThemeService.instance),
+        ChangeNotifierProvider(create: (_) => NotificationInboxController()),
+      ],
       child: Consumer<ThemeService>(
         builder: (context, themeService, child) {
           return MaterialApp(
             title: 'LMS APP',
+            navigatorKey: AppNavigator.key,
             theme: ThemeService.getLightTheme(),
             darkTheme: ThemeService.getDarkTheme(),
             themeMode: ThemeService.themeMode,
@@ -90,9 +101,12 @@ class _AuthGateState extends State<AuthGate> {
   Future<void> _checkAuthentication() async {
     try {
       debugPrint('[AUTH] Checking authentication...');
-      // Kiểm tra authentication status
       final isAuthenticated = await AuthService.isAuthenticated();
       debugPrint('[AUTH] Authentication result: $isAuthenticated');
+
+      if (isAuthenticated) {
+        await AppSession.restoreNotificationsIfLoggedIn();
+      }
 
       if (mounted) {
         setState(() {
@@ -102,7 +116,6 @@ class _AuthGateState extends State<AuthGate> {
       }
     } catch (e) {
       debugPrint('[AUTH] Error checking authentication: $e');
-      // Có lỗi, cần login lại
       if (mounted) {
         setState(() {
           _isAuthenticated = false;
@@ -132,5 +145,3 @@ class _AuthGateState extends State<AuthGate> {
     return _isAuthenticated ? const SidebarNavigation() : const LoginScreen();
   }
 }
-
-// RootNav is now replaced by SidebarNavigation

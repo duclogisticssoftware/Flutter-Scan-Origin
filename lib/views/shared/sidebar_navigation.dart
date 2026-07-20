@@ -1,12 +1,15 @@
 import 'package:flutter/material.dart';
-import 'package:qrscan_app/views/Welcome/welcome_screen.dart';
-import 'package:qrscan_app/views/Scan/scan_screen.dart';
-import 'package:qrscan_app/views/History/history_screen.dart';
-import 'package:qrscan_app/views/Settings/settings_screen.dart';
-import 'package:qrscan_app/views/shared/tracking_status_widget.dart';
+import 'package:provider/provider.dart';
+import 'package:qrscan_app/services/notification_inbox_controller.dart';
 import 'package:qrscan_app/utils/theme_colors.dart';
-import 'package:qrscan_app/views/Report/report_screen.dart';
+import 'package:qrscan_app/views/History/history_screen.dart';
 import 'package:qrscan_app/views/Inventory/inventory_screen.dart';
+import 'package:qrscan_app/views/Notifications/notifications_screen.dart';
+import 'package:qrscan_app/views/Report/report_screen.dart';
+import 'package:qrscan_app/views/Scan/scan_screen.dart';
+import 'package:qrscan_app/views/Settings/settings_screen.dart';
+import 'package:qrscan_app/views/Welcome/welcome_screen.dart';
+import 'package:qrscan_app/views/shared/tracking_status_widget.dart';
 
 class SidebarNavigation extends StatefulWidget {
   const SidebarNavigation({super.key});
@@ -18,12 +21,18 @@ class SidebarNavigation extends StatefulWidget {
 class _SidebarNavigationState extends State<SidebarNavigation> {
   int _selectedIndex = 0;
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
+  static const int _notificationsIndex = 1;
 
   final List<NavigationItem> _navigationItems = [
     NavigationItem(
       icon: Icons.home,
       title: 'Home',
       screen: const WelcomeScreen(),
+    ),
+    NavigationItem(
+      icon: Icons.notifications,
+      title: 'Thông báo',
+      screen: const NotificationsScreen(),
     ),
     NavigationItem(
       icon: Icons.qr_code_scanner,
@@ -50,7 +59,6 @@ class _SidebarNavigationState extends State<SidebarNavigation> {
       title: 'Settings',
       screen: const SettingsScreen(),
     ),
-    // Future navigation items can be added here
     NavigationItem(
       icon: Icons.analytics,
       title: 'Analytics',
@@ -62,6 +70,32 @@ class _SidebarNavigationState extends State<SidebarNavigation> {
       screen: const PlaceholderScreen(title: 'Users'),
     ),
   ];
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<NotificationInboxController>().refresh();
+    });
+  }
+
+  Widget _navLeading(int index, {required Color color, double size = 24}) {
+    final item = _navigationItems[index];
+    final icon = Icon(item.icon, color: color, size: size);
+    if (index != _notificationsIndex) return icon;
+    return Consumer<NotificationInboxController>(
+      builder: (context, inbox, _) {
+        if (inbox.unreadCount <= 0) return icon;
+        return Badge(
+          label: Text(
+            inbox.unreadCount > 99 ? '99+' : '${inbox.unreadCount}',
+            style: const TextStyle(fontSize: 10),
+          ),
+          child: icon,
+        );
+      },
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -160,10 +194,9 @@ class _SidebarNavigationState extends State<SidebarNavigation> {
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: ListTile(
-                          leading: Icon(
-                            item.icon,
+                          leading: _navLeading(
+                            index,
                             color: isSelected ? Colors.white : Colors.white70,
-                            size: 24,
                           ),
                           title: Text(
                             item.title,
@@ -318,8 +351,8 @@ class _SidebarNavigationState extends State<SidebarNavigation> {
                           borderRadius: BorderRadius.circular(10),
                         ),
                         child: ListTile(
-                          leading: Icon(
-                            item.icon,
+                          leading: _navLeading(
+                            index,
                             color: isSelected ? Colors.white : Colors.white70,
                             size: 22,
                           ),
@@ -407,6 +440,26 @@ class _SidebarNavigationState extends State<SidebarNavigation> {
             _scaffoldKey.currentState?.openDrawer();
           },
         ),
+        actions: [
+          Consumer<NotificationInboxController>(
+            builder: (context, inbox, _) {
+              return IconButton(
+                onPressed: () {
+                  setState(() => _selectedIndex = _notificationsIndex);
+                  inbox.refresh();
+                },
+                icon: Badge(
+                  isLabelVisible: inbox.unreadCount > 0,
+                  label: Text(
+                    inbox.unreadCount > 99 ? '99+' : '${inbox.unreadCount}',
+                    style: const TextStyle(fontSize: 10),
+                  ),
+                  child: const Icon(Icons.notifications_outlined),
+                ),
+              );
+            },
+          ),
+        ],
       ),
       drawer: _buildDrawer(),
       body: Column(
@@ -509,11 +562,11 @@ class _SidebarNavigationState extends State<SidebarNavigation> {
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: ListTile(
-                      leading: Icon(
-                        item.icon,
+                      leading: _navLeading(
+                        index,
                         color: isSelected
                             ? ThemeColors.getPrimaryColor(context)
-                            : Colors.grey[600],
+                            : (Colors.grey[600] ?? Colors.grey),
                         size: isSmallScreen ? 20 : 24,
                       ),
                       title: Text(
