@@ -32,5 +32,14 @@ String get mobileApiBase {
 
 class AppStorage {
   AppStorage._();
-  static const FlutterSecureStorage instance = FlutterSecureStorage();
+
+  /// iOS Keychain: first_unlock tránh mất token khi app nền / sau reboot.
+  static const FlutterSecureStorage instance = FlutterSecureStorage(
+    iOptions: IOSOptions(
+      accessibility: KeychainAccessibility.first_unlock,
+    ),
+    aOptions: AndroidOptions(
+      encryptedSharedPreferences: true,
+    ),
+  );
 }

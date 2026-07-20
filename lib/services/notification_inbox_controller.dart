@@ -23,19 +23,32 @@ class NotificationInboxController extends ChangeNotifier {
     try {
       final token = await MobileAuthService.getAccessToken();
       mobileDatabaseName = await MobileAuthService.getDatabaseName();
-      mobileSessionReady =
-          token != null && token.isNotEmpty && await MobileAuthService.me();
 
-      if (!mobileSessionReady) {
+      if (token == null || token.isEmpty) {
         unreadCount = 0;
         items = const [];
+        mobileSessionReady = false;
         error =
             'Chưa có phiên NVOAMASIS — không tải được thông báo duyệt phiếu.';
         statusHint =
             'Host: $mobileApiBase\n'
-            'Hãy Logout → Login lại (cùng thông tin web). '
-            'Nếu vẫn lỗi, kiểm tra databaseName / user có quyền duyệt trên web.';
-        debugPrint('[Inbox] no mobile session. host=$mobileApiBase');
+            'Bản publish dùng server prod (không phải localhost).\n'
+            'Logout → Login lại bằng đúng tài khoản web.\n'
+            'Không chọn "Vào app (chỉ Scan)" — lần đó sẽ không có thông báo.';
+        debugPrint('[Inbox] no mobile JWT. host=$mobileApiBase');
+        return;
+      }
+
+      mobileSessionReady = await MobileAuthService.me();
+      if (!mobileSessionReady) {
+        unreadCount = 0;
+        items = const [];
+        error =
+            'Phiên NVOAMASIS không hợp lệ hoặc đã hết hạn trên server.';
+        statusHint =
+            'Host: $mobileApiBase\n'
+            'Logout → Login lại. Nếu vẫn lỗi, kiểm tra user/DB trên web prod.';
+        debugPrint('[Inbox] mobile me() failed. host=$mobileApiBase');
         return;
       }
 

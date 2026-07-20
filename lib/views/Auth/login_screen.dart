@@ -102,17 +102,18 @@ class _LoginScreenState extends State<LoginScreen> {
             content: Text(
               'Đăng nhập Scan OK nhưng phiên NVOAMASIS thất bại:\n\n'
               '$mobileError\n\n'
-              'Không có phiên này thì app sẽ không hiện thông báo duyệt phiếu thu/chi.\n'
-              'Chọn "Thử lại" để sửa thông tin login, hoặc vào app chỉ dùng Scan.',
+              'Host: đang gọi server duyệt phiếu.\n'
+              'Không có phiên này thì mục Thông báo sẽ trống.\n'
+              'Nên chọn "Thử lại" và kiểm tra tài khoản web.',
             ),
             actions: [
               TextButton(
-                onPressed: () => Navigator.pop(ctx, false),
-                child: const Text('Thử lại'),
-              ),
-              FilledButton(
                 onPressed: () => Navigator.pop(ctx, true),
                 child: const Text('Vào app (chỉ Scan)'),
+              ),
+              FilledButton(
+                onPressed: () => Navigator.pop(ctx, false),
+                child: const Text('Thử lại'),
               ),
             ],
           ),
