@@ -26,20 +26,35 @@ class MobileLoginResult {
   });
 
   factory MobileLoginResult.fromJson(Map<String, dynamic> json) {
+    String? str(dynamic v) => v?.toString();
+    bool asBool(dynamic v) {
+      if (v == true || v == 1) return true;
+      if (v is String) {
+        final s = v.toLowerCase();
+        return s == 'true' || s == '1';
+      }
+      return false;
+    }
+
+    final flagRaw = json['flag'] ?? json['Flag'];
+    final message = str(json['message'] ?? json['Message']) ?? '';
+    final accessToken = str(json['accessToken'] ?? json['AccessToken']);
+    final expiresRaw = json['expiresAtUtc'] ?? json['ExpiresAtUtc'];
+
     return MobileLoginResult(
-      flag: json['flag'] == true,
-      message: (json['message'] as String?) ?? '',
-      accessToken: json['accessToken'] as String?,
-      expiresAtUtc: json['expiresAtUtc'] != null
-          ? DateTime.tryParse(json['expiresAtUtc'].toString())
+      flag: asBool(flagRaw),
+      message: message,
+      accessToken: accessToken,
+      expiresAtUtc: expiresRaw != null
+          ? DateTime.tryParse(expiresRaw.toString())
           : null,
-      tenantId: json['tenantId'] as String?,
-      databaseName: json['databaseName'] as String?,
-      usrId: json['usrId'] as String?,
-      usr: json['usr'] as String?,
-      name: json['name'] as String?,
-      email: json['email'] as String?,
-      department: json['department'] as String?,
+      tenantId: str(json['tenantId'] ?? json['TenantId']),
+      databaseName: str(json['databaseName'] ?? json['DatabaseName']),
+      usrId: str(json['usrId'] ?? json['UsrId']),
+      usr: str(json['usr'] ?? json['Usr']),
+      name: str(json['name'] ?? json['Name']),
+      email: str(json['email'] ?? json['Email']),
+      department: str(json['department'] ?? json['Department']),
     );
   }
 }

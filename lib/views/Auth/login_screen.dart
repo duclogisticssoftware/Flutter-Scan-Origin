@@ -95,36 +95,14 @@ class _LoginScreenState extends State<LoginScreen> {
       if (!mounted) return;
 
       if (mobileError != null) {
-        final continueScanOnly = await showDialog<bool>(
-          context: context,
-          builder: (ctx) => AlertDialog(
-            title: const Text('Chưa kết nối duyệt phiếu'),
-            content: Text(
-              'Đăng nhập Scan OK nhưng phiên NVOAMASIS thất bại:\n\n'
-              '$mobileError\n\n'
-              'Host: đang gọi server duyệt phiếu.\n'
-              'Không có phiên này thì mục Thông báo sẽ trống.\n'
-              'Nên chọn "Thử lại" và kiểm tra tài khoản web.',
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(ctx, true),
-                child: const Text('Vào app (chỉ Scan)'),
-              ),
-              FilledButton(
-                onPressed: () => Navigator.pop(ctx, false),
-                child: const Text('Thử lại'),
-              ),
-            ],
-          ),
-        );
-        if (continueScanOnly != true) {
-          setState(() {
-            _error = mobileError;
-            _loading = false;
-          });
-          return;
-        }
+        setState(() {
+          _error =
+              'Scan OK nhưng NVOAMASIS thất bại:\n$mobileError\n\n'
+              'Không vào được app khi thiếu phiên này. '
+              'Kiểm tra databaseName / user giống web amasis.nvocc.vn rồi thử lại.';
+          _loading = false;
+        });
+        return;
       }
 
       if (mounted) {
@@ -163,12 +141,26 @@ class _LoginScreenState extends State<LoginScreen> {
     try {
       await AuthService.loginByQr(qrToken);
 
-      if (mounted) {
-        Navigator.of(context).pushAndRemoveUntil(
-          MaterialPageRoute(builder: (_) => const SidebarNavigation()),
-          (route) => false,
-        );
-      }
+      if (!mounted) return;
+
+      // QR chỉ tạo phiên ScanApi — không có đủ credential cho NVOAMASIS.
+      await showDialog<void>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: const Text('Cần đăng nhập đủ form'),
+          content: const Text(
+            'Đăng nhập QR chỉ vào được phần Scan.\n\n'
+            'Thông báo duyệt phiếu cần login đủ 5 ô (giống web). '
+            'Vui lòng đăng nhập bằng form.',
+          ),
+          actions: [
+            FilledButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('OK'),
+            ),
+          ],
+        ),
+      );
     } catch (e) {
       if (mounted) {
         setState(() {

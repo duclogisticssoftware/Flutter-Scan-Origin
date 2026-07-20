@@ -5,6 +5,7 @@ import 'package:qrscan_app/services/auth_service.dart';
 import 'package:qrscan_app/services/background_notification_service.dart';
 import 'package:qrscan_app/services/app_session.dart';
 import 'package:qrscan_app/services/location_tracking_service.dart';
+import 'package:qrscan_app/services/mobile_auth_service.dart';
 import 'package:qrscan_app/services/notification_inbox_controller.dart';
 import 'package:qrscan_app/services/push_notification_service.dart';
 import 'package:qrscan_app/services/theme_service.dart';
@@ -103,8 +104,15 @@ class _AuthGateState extends State<AuthGate> {
   Future<void> _checkAuthentication() async {
     try {
       debugPrint('[AUTH] Checking authentication...');
-      final isAuthenticated = await AuthService.isAuthenticated();
-      debugPrint('[AUTH] Authentication result: $isAuthenticated');
+      final scanOk = await AuthService.isAuthenticated();
+      final mobileToken = await MobileAuthService.getAccessToken();
+      final mobileOk = mobileToken != null && mobileToken.isNotEmpty;
+      // Cần cả Scan + NVOAMASIS — thiếu mobile JWT thì bắt login lại
+      // (tránh vào app từ phiên Scan cũ rồi Thông báo trống).
+      final isAuthenticated = scanOk && mobileOk;
+      debugPrint(
+        '[AUTH] scan=$scanOk mobile=$mobileOk → authenticated=$isAuthenticated',
+      );
 
       if (isAuthenticated) {
         await AppSession.restoreNotificationsIfLoggedIn();

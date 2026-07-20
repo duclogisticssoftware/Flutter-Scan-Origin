@@ -32,9 +32,9 @@ class NotificationInboxController extends ChangeNotifier {
             'Chưa có phiên NVOAMASIS — không tải được thông báo duyệt phiếu.';
         statusHint =
             'Host: $mobileApiBase\n'
-            'Bản publish dùng server prod (không phải localhost).\n'
-            'Logout → Login lại bằng đúng tài khoản web.\n'
-            'Không chọn "Vào app (chỉ Scan)" — lần đó sẽ không có thông báo.';
+            'Thiếu JWT mobile trên máy.\n'
+            'Đóng app → mở lại sẽ về màn Login nếu thiếu phiên.\n'
+            'Login đủ 5 ô (giống web), không dùng QR.';
         debugPrint('[Inbox] no mobile JWT. host=$mobileApiBase');
         return;
       }

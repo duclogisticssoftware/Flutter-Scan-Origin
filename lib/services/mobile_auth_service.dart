@@ -80,10 +80,27 @@ class MobileAuthService {
     MobileLoginResult result, {
     String? fallbackDatabaseName,
   }) async {
-    await AppStorage.instance.write(
-      key: _tokenKey,
-      value: result.accessToken,
-    );
+    final token = result.accessToken;
+    if (token == null || token.isEmpty) {
+      throw Exception('Login mobile OK nhưng thiếu accessToken');
+    }
+
+    await AppStorage.instance.write(key: _tokenKey, value: token);
+    var saved = await AppStorage.instance.read(key: _tokenKey);
+    if (saved != token) {
+      // Fallback khi Keychain iOS ghi/đọc lỗi (đổi accessibility giữa các bản build)
+      debugPrint('[MobileAuth] Keychain write verify failed — retry once');
+      await AppStorage.instance.delete(key: _tokenKey);
+      await AppStorage.instance.write(key: _tokenKey, value: token);
+      saved = await AppStorage.instance.read(key: _tokenKey);
+      if (saved != token) {
+        throw Exception(
+          'Không lưu được phiên NVOAMASIS trên thiết bị (Keychain). '
+          'Thử xóa app rồi cài lại, hoặc kiểm tra quyền Keychain.',
+        );
+      }
+    }
+
     if (result.expiresAtUtc != null) {
       await AppStorage.instance.write(
         key: _expiresKey,
@@ -111,6 +128,9 @@ class MobileAuthService {
     if (result.usr != null) {
       await AppStorage.instance.write(key: _usrKey, value: result.usr);
     }
+    debugPrint(
+      '[MobileAuth] session saved db=$dbName tokenLen=${token.length}',
+    );
   }
 
   static Future<bool> isAuthenticated() async {
